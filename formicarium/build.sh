@@ -9,7 +9,7 @@ OUT="stl/${SPECIES}"
 mkdir -p "$OUT" dxf
 
 declare -A PARTS=(
-  [colosseum]="core facade bezel cover plugs"
+  [colosseum]="core facade plinth_left plinth_right tower tower_cap dome_cap bezel cover plugs"
   [parthenon]="core temple roof bezel cover plugs"
   [pisa]="core tower_lower tower_upper belfry bezel cover plugs"
 )

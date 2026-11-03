@@ -34,6 +34,7 @@ MAGNET_H    = 2.2;
 COVER_T     = 3;
 BEZEL_LIP   = 4;     // o kolik rámeček přesahuje přes sklo
 GALLERY_WALL = 6;    // příčka mezi komůrkami
+PLASTER_DROP = 0;    // o kolik sahá sádrová kapsa pod podlahu vlhkých komůrek
 $fn = 40;
 
 function species_preset(s) =
@@ -78,6 +79,10 @@ module capsule(p1, p2, d, y) {
     }
 }
 
+module capsule3(p1, p2, d) {   // body [x, y, z]
+    hull() { translate(p1) sphere(d = d, $fn = 20); translate(p2) sphere(d = d, $fn = 20); }
+}
+
 // ---------------------------------------------------------------------
 //  Generátor pater: komůrka = [x, z, šířka, výška, vlhká(1/0)]
 function floors_fit(z0, ztop, fh) = max(1, floor((ztop - z0 - CH_H * 1.3) / fh) + 1);
@@ -120,8 +125,11 @@ module chamber_cut(c) {
     face_extrude(-1, CH_D) translate([c[0], c[1]]) chamber2d(c[2], c[3]);
     // vlhká komůrka: kapsa na sádru, 1,5 mm schůdek = ryska "lij po sem"
     if (c[4] == 1)
-        face_extrude(CH_D - 0.01, CH_D + PLASTER_T)
-            translate([c[0], c[1]]) offset(delta = -1.5) chamber2d(c[2], c[3]);
+        face_extrude(CH_D - 0.01, CH_D + PLASTER_T) translate([c[0], c[1]]) {
+            offset(delta = -1.5) chamber2d(c[2], c[3]);
+            if (PLASTER_DROP > 0)    // skrytá kapsa pod podlahou (spojení s vodním kanálem)
+                translate([1.5, -PLASTER_DROP]) square([c[2] - 3, PLASTER_DROP + 2]);
+        }
 }
 
 // port = [x začátku hrdla, x konce (za hranou jádra), z]
@@ -165,11 +173,15 @@ module screw_pilots(screws) {
 }
 
 // ---------------------------------------------------------------------
-//  Rámeček skla. children(0) = 2D tvar skla, children(1) = 2D vnější obrys
+//  Rámeček skla. children(0) = 2D tvar skla, children(1) = 2D vnější obrys,
+//  volitelně children(2) = 2D okna (jinak jedno okno přes celé sklo)
 module bezel(screws, magnets) {
     difference() {
         face_extrude(-BEZEL_T, 0) children(1);
-        face_extrude(-BEZEL_T - 1, 1) offset(delta = -BEZEL_LIP) children(0);
+        face_extrude(-BEZEL_T - 1, 1) intersection() {
+            offset(delta = -BEZEL_LIP) children(0);
+            if ($children > 2) children(2); else children(0);
+        }
         face_extrude(-PLATE_T - 0.2, 1) offset(delta = PLATE_CLEAR) children(0);
         for (s = screws) {
             translate([s[0], -BEZEL_T - 1, s[1]]) rotate([-90, 0, 0])

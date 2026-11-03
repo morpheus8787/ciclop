@@ -1,4 +1,4 @@
-# Mraveniště – evropské památky (3D tisk, Prusa CORE One)
+# Mraveniště – památky světa (3D tisk, Prusa CORE One)
 
 Tři parametrická formikária (mraveniště) ve tvaru památek, navržená v OpenSCADu.
 Každý model ukazuje **řez budovou**: vpředu je pozorovací plocha s komůrkami pod
@@ -7,19 +7,38 @@ Formicarium).
 
 | Model | Rozměr (Š × H × V) | Díly |
 |---|---|---|
-| **Koloseum** (Řím) | 230 × 95 × 125 mm | jádro, fasáda, rámeček, víčko, zátky |
+| **Koloseum v2** (Řím) | 340 × 214 mm podstavec, budova 224 × 151 × 118 mm (+ kopule) | jádro, fasáda, podstavec (2 díly), vodní věž + víčko, čepička kopule, rámeček, víčko, zátky |
 | **Parthenón** (Atény) | 236 × 172 × 122 mm | jádro, chrám (sloupy + kladí), střecha, rámeček, víčko, zátky |
 | **Šikmá věž** (Pisa) | 95 × 42 × 228 mm | jádro, věž dole, věž nahoře, zvonice, rámeček, víčko, zátky |
 
 Všechny díly se vejdou na **Prusa CORE One / CORE One+ (250 × 220 × 270 mm)**,
 tisknou se **bez podpěr** a jsou ověřené jako uzavřená (watertight) tělesa.
 
-| Koloseum | Parthenón | Pisa |
-|---|---|---|
-| ![](img/colosseum_iso.png) | ![](img/parthenon_iso.png) | ![](img/pisa_iso.png) |
-| ![](img/colosseum_back.png) | ![](img/parthenon_back.png) | ![](img/pisa_back.png) |
+### Koloseum v2 – podle konceptu „Colosseum Formicarium“
+![](img/colosseum_assembly.png)
+![](img/colosseum_back.png)
 
-Pohled na komůrky (bez skla): `img/*_core_front.png`.
+Co je převzato z konceptu:
+- **celý eliptický amfiteátr** s výsekem vpředu – v řezu jsou klenuté komůrky, sladěné s patry arkád
+  (3 patra hnízda = 3 patra oblouků),
+- **80 průchozích oblouků** s ochozem za nimi a polosloupy, atika s okénky,
+- **průhledná kopule nahoře = aréna (outworld)** se stupňovitým hledištěm a pískem/mechem;
+  mravenci do ní vylézají chodbou z horního patra hnízda,
+- **větrací čepička** na vrcholu kopule (vyjímatelná zátka se síťkou = otvor na krmení),
+- **vodní věž** vlevo (plexi trubka) propojená hadičkou se sádrou v základně,
+- **eliptický podstavec** s obvodovým chodníkem a nápis COLOSSEVM,
+- rámeček skla s **okny ve tvaru komůrek** – zepředu vypadá jako kamenný řez jako na obrázku.
+
+Rozdíly proti obrázku (kvůli mravencům a tisku): kopule je kulová Ø 120 mm (koupená, tisk
+průhledné kopule není možný) a nepokrývá celou střechu; osvětlení komůrek („noční režim“)
+jsem nedával – světlo v hnízdě mravence stresuje (max. slabé červené LED zvenku).
+
+| Parthenón | Pisa |
+|---|---|
+| ![](img/parthenon_iso.png) | ![](img/pisa_iso.png) |
+| ![](img/parthenon_back.png) | ![](img/pisa_back.png) |
+
+Pohled na komůrky: `img/colosseum_front.png` (s rámečkem), `img/*_core_front.png` (bez skla).
 
 ---
 
@@ -35,7 +54,7 @@ Pohled na komůrky (bez skla): `img/*_core_front.png`.
 | **Tma** | Zatemňovací **víčko na magnety** (6×2 mm) s nápisem – sundáš jen při pozorování. Alternativně červená fólie na sklo. |
 | **Pozorování** | Plexisklo/sklo 3 mm přitisknuté k rovné čelní ploše (tisk čelem nahoru + žehlení horní vrstvy = rovina bez škvír). |
 | **Únikuvzdornost** | Jádro je **jeden kus** (žádné spáry v hnízdě), sklo v drážce rámečku, hrdlo hadičky má vlastní zátku, zavlažovací hadička má zátku. |
-| **Aréna (outworld) na krmení a vodu** | Hrdlo pro **silikonovou hadičku 8×12 mm** na boku; aréna = libovolný box s Fluonem (PTFE) na stěnách a víkem se síťkou. Hnízdo samo o sobě arénu nenahrazuje. |
+| **Aréna (outworld) na krmení a vodu** | Koloseum: aréna je **pod kopulí na střeše** (větrání 3 otvory se síťkou v atice + čepička). Ostatní modely: hrdlo pro **silikonovou hadičku 8×12 mm** na boku a aréna = libovolný box s Fluonem (PTFE) na stěnách a víkem se síťkou. Koloseum má boční hrdlo také (pro 2. arénu, jinak zátka). |
 | **Snadná údržba** | Rámeček se sklem jde odšroubovat (M3), sádru lze dovlhčit bez otevírání. |
 
 ### Velikost podle druhu (`SPECIES`)
@@ -75,6 +94,8 @@ SPECIES=large ./build.sh        # -> stl/large/
 | `*_facade`, `*_temple`, `*_tower_*`, `*_belfry` | 0,15 mm | 3 | 10–15 % gyroid | Stojí tak, jak jsou ve STL. Bez podpěr (jen krátké můstky). Parthenón: pomalejší můstky. |
 | `*_roof` | 0,15 mm | 3 | 10 % | plochou stranou dolů |
 | `*_bezel` | 0,2 mm | 3 | 30 % | pohledovou stranou na podložku |
+| `colosseum_plinth_*` | 0,2 mm | 3 | 15 % | každá polovina zvlášť (170 × 214 mm) |
+| `colosseum_tower`, `_tower_cap`, `_dome_cap` | 0,15 mm | 3 | 20 % | věž: 4 perimetry, ať je pata vodotěsná |
 | `*_cover` | 0,2 mm | 3 | 20 % | nápis nahoru (lze změnit barvu na vrstvě 2,4 mm = barevný nápis) |
 | `*_plugs` | 0,15 mm | 4 | 100 % | |
 
@@ -86,13 +107,18 @@ PETG: 240/85 °C (profil Prusament PETG), na texturovaný plát nebo s lepidlem/
 
 - PETG ~ 0,3–0,7 kg (dle modelu, fasády jsou plné s řídkou výplní)
 - **Plexisklo (PMMA) nebo sklo 3 mm** – rozměr:
-  - Koloseum **208 × 105 mm** (obdélník)
+  - Koloseum **158 × 81 mm** (obdélník)
   - Pisa **66 × 160 mm** (obdélník)
   - Parthenón **pětiúhelník 184 × 89 mm** → nech vyřezat laserem podle `dxf/parthenon_plate.dxf`
     (DXF pro laser jsou i pro ostatní: `dxf/*_plate.dxf`)
-- Šrouby **M3 × 12 zápustné** (samořezné do plastu): Koloseum 8, Parthenón 7, Pisa 4
+- Šrouby **M3 × 12 zápustné** (samořezné do plastu): Koloseum 7, Parthenón 7, Pisa 4
 - Neodymové magnety **6 × 2 mm**: Koloseum 8, Parthenón 8, Pisa 4 (půlka do rámečku, půlka do víčka)
-- Nerezová síťka **0,2 mm** (kolečka Ø 10 mm): Koloseum 3, Parthenón 2, Pisa 2
+- Nerezová síťka **0,2 mm** (kolečka Ø 10 mm): Koloseum 5 (+ 1 kolečko Ø 26 mm do čepičky kopule), Parthenón 2, Pisa 2
+- **Jen Koloseum:**
+  - průhledná **dělitelná plastová koule Ø 120 mm** (dekorační, PET/PS) nebo akrylová polokoule Ø 120 mm – použije se půlka
+  - **plexi trubka 40/34 mm, délka 70 mm** (vodní věž)
+  - akvarijní silikon bez fungicidů (utěsnění trubky ve věži)
+  - jemný písek / hlína, mech na dno arény
 - **Sádra** – modelářská/alabastrová nebo dentální, bez přísad (~50 g)
 - **Akvarijní vzduchovací hadička 4/6 mm** (~30 cm)
 - **Silikonová hadička 8 × 12 mm** k aréně
@@ -120,6 +146,22 @@ PETG: 240/85 °C (profil Prusament PETG), na texturovaný plát nebo s lepidlem/
 9. **Test těsnosti:** nalij 3–5 ml vody do hadičky, za 1 h zkontroluj, že voda nepronikla mimo
    sádru. Posviť zezadu – skrz spáru mezi sklem a čelem nesmí prosvítat světlo.
 10. Do hrdla zasuň hadičku 8 × 12 k aréně (nebo zátku).
+
+### Koloseum – navíc
+1. **Podstavec** slep ze dvou polovin (kolíky z filamentu).
+2. **Zavlažování = spojené nádoby:** hadička 4/6 mm vede z vývodu u paty věže drážkou v podstavci a
+   do otvoru v levém boku jádra (vodní kanál pod podlahou spodního patra). Nejdřív hadičku zasuň do
+   jádra (konec s chumáčkem vaty), pak teprve nalij sádru.
+3. **Věž:** plexi trubku vlep silikonem do lůžka věže (vodotěsně), nasaď víčko na sloupky.
+   **Ryska na sloupcích = MAX hladina.** Hladina ve věži je stejná jako v kanálu pod podlahou
+   hnízda – pod ryskou nikdy nevyteče do komůrek a sádra se sama dosytí. Nad rysku nenalévat!
+   Věž zároveň ukazuje, kolik vody v hnízdě zbývá.
+4. **Kopule:** do půlky koule vyvrtej stupňovitým vrtákem otvor Ø 30 mm, zvenku nalep kroužek
+   čepičky, do zátky vlep síťku Ø 26 mm. Kopuli posaď do drážky na střeše; spáru utěsni tenkým
+   proužkem molitanu/plastelíny, nebo ji natři Fluonem zevnitř (aby mravenci nelezli k okraji).
+5. Do arény nasyp 5–10 mm písku/hlíny, dej mech, misku s vodou (zkumavku s vatou) a krmení.
+   Krmí se vyndáním zátky v čepičce, kopuli zvedej jen při úklidu.
+6. Vstup z hnízda do arény je otvor v horní hraně jádra pod přední částí kopule.
 
 ### Stěhování kolonie
 Kolonie v zkumavce: připoj arénu, zkumavku vlož do arény, hnízdo zatemni víčkem a sádru navlhči.
@@ -152,7 +194,9 @@ openscad -D 'PART="core"' -D 'SPECIES="large"' -o core.stl colosseum.scad
 ```
 
 `PART`: `assembly` (náhled se sklem), `display` (bez skla), `core`, `facade` / `temple` /
-`roof` / `tower_lower` / `tower_upper` / `belfry`, `bezel`, `cover`, `plugs`, `plate` (2D → DXF).
+`roof` / `tower_lower` / `tower_upper` / `belfry`, `bezel`, `cover`, `plugs`, `plate` (2D → DXF);
+Koloseum navíc `plinth_left`, `plinth_right`, `tower`, `tower_cap`, `dome_cap`.
+Koloseum: `DOME_D` (průměr kopule, max ~128 mm), `TUBE40_*` (trubka věže).
 
 Hlavní parametry (`lib/formicarium.scad`): `SPECIES`, `PLASTER_T` (sádra), `PLATE_T`
 (sklo), `TUBE_OD` (hadička k aréně), `AIRLINE_OD`, `MESH_D`, rozměry šroubů a magnetů.
@@ -171,7 +215,8 @@ hrany nik, kladí mezi hlavicemi sloupů).
 
 ## Omezení / na co dát pozor
 
-- Modely jsou **stylizované** (Koloseum je pro hnízdo zvýšené), ne přesné repliky.
+- Modely jsou **stylizované**, ne přesné repliky.
+- Koloseum: fasáda je masivní díl (~0,5 kg PETG při 10 % výplni); hlídej hladinu ve věži pod ryskou.
 - Je to **zatím nevytištěný návrh** – ověřeno výpočetně (geometrie, rozměry, převisy).
   Doporučuji nejdřív vytisknout jádro Pisy (nejmenší) a vyzkoušet sádru + těsnost skla.
 - Velikosti pro druhy vychází z praxe chovatelů a prodejců, ne z vědeckých norem –
