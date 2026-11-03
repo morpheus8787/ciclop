@@ -25,3 +25,13 @@ Jednoduchý parametrický kryt na tělo (baterii) VEEV ONE pro 3D tisk.
 ## Úprava rozměrů
 Změřte vlastní zařízení, upravte konstanty nahoře v `veev_one_case.py`
 a spusťte `pip install cadquery && python3 veev_one_case.py`.
+
+## Připraveno k tisku: Prusa CORE One + PETG
+- `veev_one_case_COREONE_PETG.bgcode`: hotový G-code, stačí nahrát do tiskárny (USB / Prusa Connect)
+- `veev_one_case_COREONE_PETG.3mf`: projekt pro PrusaSlicer (otevřít, zkontrolovat, případně přeslicovat)
+
+Profil: Prusa CORE One, 0,4 mm standardní tryska (ne HF), 0.20mm STRUCTURAL, Prusament PETG, 4 perimetry, 15 % výplň, bez podpěr.
+Odhad: ~50 min, 8,4 g filamentu. Tryska 250 °C, podložka 85 °C.
+
+Pozn.: slicováno PrusaSlicerem 2.7.2 s profilem CORE One 2.5.14 převedeným do jednoho souboru;
+novější šablonové proměnné (abrazivní filament, HF tryska, teplota komory) jsou nahrazeny pevnými hodnotami z profilu.
