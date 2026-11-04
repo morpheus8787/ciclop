@@ -91,6 +91,32 @@ def cmd_review(cfg, args):
     print(f"  upravené: {r.validation['candidate']}")
 
 
+def cmd_check(cfg, args):
+    """Otestuje spojení s burzou BEZ zadání jakékoli objednávky."""
+    ex = data.make_exchange(cfg)
+    ok = True
+
+    def step(name, fn):
+        nonlocal ok
+        try:
+            print(f"✔ {name}: {fn()}")
+        except Exception as exc:  # chceme vidět každou chybu, ne spadnout na první
+            ok = False
+            print(f"✘ {name}: {type(exc).__name__}: {str(exc)[:200]}")
+
+    step("veřejná cena", lambda: f"{cfg.symbol} = {ex.fetch_ticker(cfg.symbol)['last']}")
+    step("denní svíčky", lambda: f"{len(data.fetch_recent(ex, cfg.symbol, cfg.timeframe, 50))} uzavřených")
+    if cfg.api_key and cfg.api_secret:
+        def balance():
+            free = ex.fetch_balance().get("free", {})
+            return f"{cfg.quote_asset} {free.get(cfg.quote_asset) or 0}, {cfg.base_asset} {free.get(cfg.base_asset) or 0}"
+        step("přihlášení API klíčem + zůstatek", balance)
+        step("trh a minimum objednávky", lambda: ExchangeBroker(ex, cfg.symbol).market.get("limits", {}).get("cost"))
+    else:
+        print("– API klíč není nastaven: přihlášení netestuji (pro paper režim není potřeba)")
+    print("Výsledek:", "vše OK" if ok else "něco selhalo – viz výše")
+
+
 def cmd_news(cfg, args):
     headlines, ok = news.fetch_headlines(cfg.news_feeds)
     a = news.assess(headlines, datetime.now(timezone.utc), cfg.news_lookback_hours,
@@ -129,12 +155,13 @@ def main(argv=None):
     pb.add_argument("--days", type=int, default=365)
     pr = sub.add_parser("review", help="rozbor vlastních obchodů a učení z chyb")
     pr.add_argument("--days", type=int, default=730)
+    sub.add_parser("check", help="otestuj spojení s burzou (nic neobchoduje)")
     sub.add_parser("news", help="aktuální vyhodnocení zpráv")
     sub.add_parser("run", help="spusť agenta (paper/testnet/live dle MODE)")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     cfg = config_from_env()
-    {"learn": cmd_learn, "backtest": cmd_backtest, "review": cmd_review, "news": cmd_news, "run": cmd_run}[args.cmd](cfg, args)
+    {"learn": cmd_learn, "backtest": cmd_backtest, "review": cmd_review, "check": cmd_check, "news": cmd_news, "run": cmd_run}[args.cmd](cfg, args)
 
 
 if __name__ == "__main__":

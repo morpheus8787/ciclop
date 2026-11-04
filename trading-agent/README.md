@@ -126,6 +126,7 @@ python -m pytest          # 100 testů
 python -m agent.main backtest --days 3300  # 1) jak by strategie dopadla (srovnej s buy & hold)
 python -m agent.main review --days 3300    # 2) rozbor obchodů, učení z chyb
 python -m agent.main learn --days 730      #    (jen pro STRATEGY=patterns) které patterny fungují
+python -m agent.main check                 #    test spojení s burzou (nic neobchoduje)
 python -m agent.main news                  #    stav zpráv
 MODE=paper python -m agent.main run        # 4) pár dní nanečisto se živými daty
 MODE=live  python -m agent.main run        # 5) živě s malou částkou
