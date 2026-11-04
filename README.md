@@ -25,3 +25,8 @@ Directory structure
  * `Ciclop-BOM.ods`: Ciclop Bill of Materials. Document for [LibreOffice](https://www.libreoffice.org/)
 
 **Please note**: The original Ciclop design was made in Autodesk Inventor(tm) which is proprietary software. Since we love open formats we are migrating the Ciclop parts to [FreeCAD](http://www.freecadweb.org/), which is a multiplatform open source CAD software. We invite people from the community to join us and help us to complete the task.
+
+Trading agent
+=============
+
+Samostatný projekt ve složce [`trading-agent/`](trading-agent/README.md) – pravidlový krypto trading agent.
