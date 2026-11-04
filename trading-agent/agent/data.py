@@ -1,6 +1,7 @@
 """Tržní data a připojení k burze přes ccxt."""
 from __future__ import annotations
 
+import os
 import time
 
 import pandas as pd
@@ -17,6 +18,10 @@ def make_exchange(cfg):
     params = {"enableRateLimit": True, "options": {"defaultType": "spot"}}
     if cfg.api_key:
         params.update(apiKey=cfg.api_key, secret=cfg.api_secret)
+    # ccxt nepřebírá proxy z proměnných prostředí – předáme ji explicitně (firemní síť, cloud)
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    if proxy:
+        params["httpsProxy"] = proxy
     ex = getattr(ccxt, cfg.exchange)(params)
     if cfg.mode == "testnet":
         ex.set_sandbox_mode(True)
