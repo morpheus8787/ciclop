@@ -22,9 +22,8 @@ Parametrický model průmyslové PC skříně (inspirace: stojací počítačov�
 - Korpus: DC01 **1,5 mm**, svařovaný; dveře, čelo, vana zásuvky: DC01 **1,0 mm**; police pozink 1,0 mm; držák VESA 2,0 mm.
 - Zasklení: polykarbonát 4 mm, uchycení na 8 přivařovacích/nalisovaných svornících M4 (otvory Ø4,2 ve dveřích).
 - Ohyby: všechny 90°, rozvin počítán **odečtem ohybu** podle ohraňovny:
-  **t = 1,5 mm → 2,5 mm**, **t = 1,0 mm → 2,0 mm** na ohyb
+  **t = 1,0 mm → 2,0 mm**, **t = 1,5 mm → 2,5 mm**, **t = 2,0 mm → 3,8 mm** na ohyb
   (rozvin = součet vnějších rozměrů − počet ohybů × odečet).
-  Držák VESA (t = 2,0 mm) zatím počítán K‑faktorem 0,44 (odečet ≈ 3,48 mm).
 - Povrch: prášková barva RAL 7035 (korpus) / RAL 5010 (dveře, čelo).
 - Hmotnost plechových dílů ≈ 62 kg.
 - Nakupované díly: 4× přivařovací pant, 3× vačkový zámek Ø20, 1 pár teleskopických pojezdů 400 mm, příchytky police.

@@ -19,7 +19,7 @@ STEEL_DENSITY = 7.85e-6  # kg / mm^3
 
 # Bend deduction per 90° bend from the press-brake shop (mm), by thickness.
 # Flat length = sum of outer dimensions - number_of_bends * deduction.
-BEND_DEDUCTION = {1.0: 2.0, 1.5: 2.5}
+BEND_DEDUCTION = {1.0: 2.0, 1.5: 2.5, 2.0: 3.8}
 
 
 @dataclass(frozen=True)
