@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import csv
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,6 +20,14 @@ class Position:
     take_profit: float
     opened_at: str
     patterns: str = ""
+    initial_stop: float = 0.0   # 0 = stejný jako stop (starší stavové soubory)
+    max_price: float = 0.0
+    min_price: float = 0.0
+    context: dict = field(default_factory=dict)
+
+    @property
+    def risk(self) -> float:
+        return self.entry - (self.initial_stop or self.stop)
 
 
 @dataclass(frozen=True)
@@ -36,6 +44,7 @@ class Store:
         self.dir.mkdir(parents=True, exist_ok=True)
         self.state_path = self.dir / "state.json"
         self.journal_path = self.dir / "journal.csv"
+        self.trades_path = self.dir / "trades.jsonl"  # detailní záznamy obchodů pro rozbor
 
     def load(self) -> AgentState:
         if not self.state_path.exists():

@@ -1,4 +1,4 @@
-"""CLI: python -m agent.main {learn,backtest,news,run}"""
+"""CLI: python -m agent.main {learn,backtest,review,news,run}"""
 from __future__ import annotations
 
 import argparse
@@ -7,11 +7,12 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import data, learn, news
+from . import data, learn, news, selflearn
 from .backtest import run_backtest
 from .broker import ExchangeBroker, PaperBroker
 from .bot import TradingAgent
 from .config import config_from_env, load_dotenv
+from .review import load_records
 from .risk import RiskLimits
 from .store import Store
 from .strategy import StrategyParams
@@ -19,9 +20,25 @@ from .strategy import StrategyParams
 LEARNED_FILE = "learned_patterns.json"
 
 
-def _params(cfg) -> StrategyParams:
+def _base_params(cfg) -> StrategyParams:
+    """Pravidla + naučené patterny, BEZ adaptací z rozboru (ty se odvozují vždy znovu)."""
     base = StrategyParams(stop_atr_mult=cfg.stop_atr_mult, take_profit_r=cfg.take_profit_r)
     return base.with_learned(Path(cfg.state_dir) / LEARNED_FILE)
+
+
+def _params(cfg) -> StrategyParams:
+    return _base_params(cfg).with_adaptations(Path(cfg.state_dir) / selflearn.ADAPTATIONS_FILE)
+
+
+def _run_review(cfg, ex, days: int) -> selflearn.SelfReview:
+    df = data.fetch_history(ex, cfg.symbol, cfg.timeframe, days)
+    live = load_records(Path(cfg.state_dir) / selflearn.TRADES_FILE)
+    result = selflearn.self_review(df, _base_params(cfg), _limits(cfg), live, cfg.paper_start_equity,
+                                   cfg.fee_rate, min_trades=cfg.adapt_min_trades)
+    path = selflearn.save_review(result, cfg.state_dir)
+    logging.getLogger(__name__).warning("Report rozboru uložen: %s (adaptace %s)", path,
+                                        "PŘIJATY" if result.validation["accepted"] else "nepřijaty")
+    return result
 
 
 def _limits(cfg) -> RiskLimits:
@@ -55,6 +72,21 @@ def cmd_backtest(cfg, args):
         print(f"{t.entry_time:%Y-%m-%d %H:%M} → {t.exit_time:%Y-%m-%d %H:%M}  {t.reason:12} pnl {t.pnl:+8.2f}  {t.patterns}")
 
 
+def cmd_review(cfg, args):
+    ex = data.make_exchange(cfg)
+    r = _run_review(cfg, ex, args.days)
+    o = r.report["overall"]
+    print(f"Obchodů v rozboru: {o['n']} (z toho skutečných: {r.live_report['overall']['n'] if r.live_report else 0})")
+    print(f"Úspěšnost {o['win_rate']*100:.0f} %, průměr {o['avg_r']:+.2f}R")
+    print("Opakované chyby:")
+    for k, m in sorted(r.report["mistakes"].items(), key=lambda kv: kv[1]["lost_r"]):
+        print(f"  - {k}: {m['count']}× ({m['lost_r']:+.1f}R)")
+    print("Navržené úpravy:", *(r.adaptations["reasons"] or ["žádné"]), sep="\n  - ")
+    print(f"Ověření: {'PŘIJATO' if r.validation['accepted'] else 'NEPŘIJATO'} – {r.validation['why']}")
+    print(f"  původní:  {r.validation['baseline']}")
+    print(f"  upravené: {r.validation['candidate']}")
+
+
 def cmd_news(cfg, args):
     headlines, ok = news.fetch_headlines(cfg.news_feeds)
     a = news.assess(headlines, datetime.now(timezone.utc), cfg.news_lookback_hours,
@@ -72,8 +104,12 @@ def cmd_run(cfg, args):
         broker = PaperBroker(ex, cfg.symbol, paper["cash"], paper["base"], cfg.fee_rate)
     else:
         broker = ExchangeBroker(ex, cfg.symbol)
+    def adapt():
+        _run_review(cfg, ex, cfg.adapt_history_days)
+        return _params(cfg)
+
     agent = TradingAgent(cfg, broker, store, _params(cfg),
-                         bars_fn=lambda: data.fetch_recent(ex, cfg.symbol, cfg.timeframe))
+                         bars_fn=lambda: data.fetch_recent(ex, cfg.symbol, cfg.timeframe), adapt_fn=adapt)
     agent.run_forever()
 
 
@@ -86,12 +122,14 @@ def main(argv=None):
     pl.add_argument("--horizon", type=int, default=12)
     pb = sub.add_parser("backtest", help="otestuj strategii na historii")
     pb.add_argument("--days", type=int, default=365)
+    pr = sub.add_parser("review", help="rozbor vlastních obchodů a učení z chyb")
+    pr.add_argument("--days", type=int, default=730)
     sub.add_parser("news", help="aktuální vyhodnocení zpráv")
     sub.add_parser("run", help="spusť agenta (paper/testnet/live dle MODE)")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     cfg = config_from_env()
-    {"learn": cmd_learn, "backtest": cmd_backtest, "news": cmd_news, "run": cmd_run}[args.cmd](cfg, args)
+    {"learn": cmd_learn, "backtest": cmd_backtest, "review": cmd_review, "news": cmd_news, "run": cmd_run}[args.cmd](cfg, args)
 
 
 if __name__ == "__main__":

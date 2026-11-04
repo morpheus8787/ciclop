@@ -53,3 +53,9 @@ def test_load_dotenv_does_not_override(tmp_path, monkeypatch):
 def test_invalid_values_rejected(env):
     with pytest.raises(ConfigError):
         config_from_env(env)
+
+
+def test_only_btc_by_default():
+    with pytest.raises(ConfigError):
+        config_from_env({**BASE, "SYMBOL": "ETH/USDT"})
+    assert config_from_env({**BASE, "SYMBOL": "ETH/USDT", "ALLOW_ALTCOINS": "true"}).symbol == "ETH/USDT"

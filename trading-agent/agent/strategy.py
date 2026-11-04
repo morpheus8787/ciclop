@@ -2,15 +2,17 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from .indicators import with_indicators
 from .patterns import BEARISH, BULLISH, PATTERNS, detect_all
 
 WARMUP_BARS = 210  # EMA200 + rezerva
+CONTEXT_FEATURES = ("rsi", "stretch", "volatility", "session", "volume")
 
 
 @dataclass(frozen=True)
@@ -21,6 +23,8 @@ class StrategyParams:
     take_profit_r: float = 2.0
     bullish_patterns: tuple[str, ...] = tuple(p.name for p in PATTERNS if p.direction == BULLISH)
     bearish_patterns: tuple[str, ...] = tuple(p.name for p in PATTERNS if p.direction == BEARISH)
+    blocked_contexts: tuple[str, ...] = ()   # např. ("stretch=>2ATR", "session=asia")
+    breakeven_at_r: float | None = None      # posun stopu na nákupku po zisku X R
 
     def with_learned(self, path: str | Path) -> "StrategyParams":
         """Použije jen patterny, které prošly `learn` (pokud soubor existuje)."""
@@ -31,15 +35,59 @@ class StrategyParams:
         # Když učení nenašlo žádný bullish pattern s výhodou, agent NEOBCHODUJE (prázdná n-tice).
         bull = tuple(data.get("selected_bullish", ()))
         bear = tuple(data.get("selected_bearish", ())) or self.bearish_patterns
-        return StrategyParams(self.rsi_min, self.rsi_max, self.stop_atr_mult, self.take_profit_r, bull, bear)
+        return replace(self, bullish_patterns=bull, bearish_patterns=bear)
+
+    def with_adaptations(self, adapt: dict | str | Path | None) -> "StrategyParams":
+        """Aplikuje závěry z rozboru vlastních obchodů. Jen zpřísňuje – riziko nikdy nezvyšuje."""
+        if adapt is None:
+            return self
+        if not isinstance(adapt, dict):
+            p = Path(adapt)
+            if not p.exists():
+                return self
+            adapt = json.loads(p.read_text(encoding="utf-8"))
+        disabled = set(adapt.get("disabled_patterns", ()))
+        be = adapt.get("breakeven_at_r")
+        return replace(
+            self,
+            bullish_patterns=tuple(n for n in self.bullish_patterns if n not in disabled),
+            blocked_contexts=tuple(sorted(set(self.blocked_contexts) | set(adapt.get("blocked_contexts", ())))),
+            breakeven_at_r=float(be) if be else self.breakeven_at_r,
+        )
+
+
+def context_buckets(df: pd.DataFrame) -> pd.DataFrame:
+    """Zařadí každou svíčku do přihrádek kontextu (pro rozbor obchodů a blokace)."""
+    stretch = (df["close"] - df["ema_fast"]) / df["atr"]
+    vol_pct = df["atr"] / df["close"] * 100
+    hours = df.index.hour if isinstance(df.index, pd.DatetimeIndex) else np.zeros(len(df), dtype=int)
+    vol_ratio = df["volume"] / df["vol_sma"]
+    return pd.DataFrame({
+        "ctx_rsi": np.select([df["rsi"] < 50, df["rsi"] < 60, df["rsi"] <= 70], ["40-50", "50-60", "60-70"], "other"),
+        "ctx_stretch": np.select([stretch < 1, stretch <= 2], ["<1ATR", "1-2ATR"], ">2ATR"),
+        "ctx_volatility": np.select([vol_pct < 0.5, vol_pct <= 1.0], ["low", "mid"], "high"),
+        "ctx_session": np.select([hours < 8, hours < 16], ["asia", "europe"], "us"),
+        "ctx_volume": np.where(vol_ratio >= 1, "high", "low"),
+    }, index=df.index)
+
+
+def blocked_mask(ctx: pd.DataFrame, blocked: tuple[str, ...]) -> pd.Series:
+    mask = pd.Series(False, index=ctx.index)
+    for item in blocked:
+        feature, _, bucket = item.partition("=")
+        col = f"ctx_{feature}"
+        if col in ctx:
+            mask |= ctx[col] == bucket
+    return mask
 
 
 def generate_signals(ohlcv: pd.DataFrame, params: StrategyParams) -> pd.DataFrame:
-    """Vrátí nový DataFrame se sloupci entry, exit, stop, take_profit, patterns.
+    """Vrátí nový DataFrame se sloupci entry, exit, stop, take_profit, patterns a ctx_*.
 
     Signál na řádku i znamená: svíčka i je UZAVŘENÁ a obchod se provede na otevření i+1.
     """
     df = with_indicators(ohlcv)
+    ctx = context_buckets(df)
     pats = detect_all(ohlcv)
     bull_hits = pats[list(params.bullish_patterns)] if params.bullish_patterns else pats.iloc[:, :0]
     bear_hits = pats[list(params.bearish_patterns)] if params.bearish_patterns else pats.iloc[:, :0]
@@ -47,7 +95,7 @@ def generate_signals(ohlcv: pd.DataFrame, params: StrategyParams) -> pd.DataFram
     trend_up = (df["close"] > df["ema_slow"]) & (df["ema_fast"] > df["ema_slow"])
     rsi_ok = df["rsi"].between(params.rsi_min, params.rsi_max)
     any_bull = bull_hits.any(axis=1)
-    entry = trend_up & rsi_ok & any_bull & df["atr"].notna()
+    entry = trend_up & rsi_ok & any_bull & df["atr"].notna() & ~blocked_mask(ctx, params.blocked_contexts)
 
     trend_broken = df["close"] < df["ema_fast"]
     exit_ = (bear_hits.any(axis=1) & trend_broken) | (df["close"] < df["ema_slow"])
@@ -56,7 +104,25 @@ def generate_signals(ohlcv: pd.DataFrame, params: StrategyParams) -> pd.DataFram
     take_profit = df["close"] + params.take_profit_r * (df["close"] - stop)
     names = bull_hits.apply(lambda r: ",".join(r.index[r.values]), axis=1) if len(bull_hits.columns) else ""
 
-    out = df.assign(entry=entry.fillna(False), exit=exit_.fillna(False), stop=stop,
-                    take_profit=take_profit, patterns=names)
+    out = pd.concat([df, ctx], axis=1).assign(entry=entry.fillna(False), exit=exit_.fillna(False),
+                                              stop=stop, take_profit=take_profit, patterns=names)
     out.loc[out.index[:WARMUP_BARS], ["entry"]] = False
     return out
+
+
+def entry_context(row: pd.Series) -> dict:
+    """Kontext vstupu uložený k obchodu – podklad pro pozdější rozbor."""
+    ctx = {f: str(row.get(f"ctx_{f}", "")) for f in CONTEXT_FEATURES}
+    ctx["rsi_value"] = round(float(row.get("rsi", float("nan"))), 1)
+    return ctx
+
+
+def breakeven_stop(stop: float, entry: float, initial_stop: float, max_price: float,
+                   breakeven_at_r: float | None, fee_rate: float) -> float:
+    """Posune stop na nákupní cenu (+ poplatky), jakmile cena došla do zisku `breakeven_at_r` × R."""
+    if not breakeven_at_r:
+        return stop
+    risk = entry - initial_stop
+    if risk > 0 and max_price >= entry + breakeven_at_r * risk:
+        return max(stop, entry * (1 + 2 * fee_rate))
+    return stop

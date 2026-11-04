@@ -1,4 +1,4 @@
-# Trading agent (krypto, spot, jen long)
+# Trading agent (BTC, spot, jen long)
 
 Pravidlový agent, který obchoduje podle pevně daných pravidel, takže do rozhodování nevstupují emoce.
 Každé rozhodnutí je deterministické, zalogované a zapsané do deníku `state/journal.csv`.
@@ -40,6 +40,38 @@ Příkaz `learn` změří na historii zvoleného trhu, které patterny **skuteč
 > Upřímně: samotné svíčkové patterny mají na krypto trzích obvykle slabou výhodu.
 > Proto je tu trendový filtr, filtr zpráv a hlavně tvrdé řízení rizika.
 
+## Učení z vlastních obchodů
+
+Agent si ke **každému** obchodu uloží do `state/trades.jsonl`, za jakých okolností vstoupil a jak obchod dopadl:
+- **kontext vstupu:** patterny, RSI, vzdálenost od EMA50 v ATR (`stretch`), volatilita, obchodní seance (Asie/Evropa/USA), objem a skóre zpráv,
+- **výsledek:** zisk/ztráta v **R** (násobcích rizika), **MFE** (maximální zisk během obchodu), **MAE** (maximální pokles během obchodu), doba držení a důvod výstupu.
+
+Rozbor (`python -m agent.main review`, nebo automaticky každých `ADAPT_EVERY_TRADES` uzavřených obchodů)
+roztřídí dobré i špatné obchody a pojmenuje opakované chyby:
+
+| Chyba | Co znamená | Možná náprava |
+|---|---|---|
+| Rychlý stop | stop do 3 svíček | špatné načasování vstupu |
+| Vrácený zisk | obchod byl ≥ 1R v plusu, skončil ve ztrátě | posun stopu na nákupku při +1R |
+| Honění ceny | vstup > 2 ATR nad EMA50 a ztráta | nevstupovat v situaci `stretch=>2ATR` |
+| Vstup nikdy nefungoval | cena se hned obrátila (MFE < 0,25R) | vypnout slabý pattern |
+
+Ze závěrů agent odvodí **úpravy pravidel**: vypne ztrátové patterny, zablokuje ztrátové situace
+(nejvýš 3 a nikdy všechny varianty jedné vlastnosti) a zapne ochranu zisku.
+
+**Ochrana proti přeučení**, protože nejčastější chybou „samoučících se“ botů je, že se naučí šum:
+1. Závěr se dělá jen ze skupiny s aspoň `ADAPT_MIN_TRADES` (15) obchody.
+2. Úpravy se odvodí ze starší části historie a ze skutečných obchodů, pak se **ověří na novější části**, kterou rozbor neviděl.
+3. Úpravy se přijmou jen tehdy, když na ověřovacích datech zlepší průměrné R i výnos a nezhorší drawdown o víc než 1 p. b.
+4. Úpravy smí pravidla **jen zpřísnit**. Nikdy nezvýší riziko, velikost pozice ani limity.
+
+Každý rozbor se uloží jako čitelný report v `state/reviews/review-*.md`. Je v něm tabulka podle patternů, kontextů
+a důvodů výstupu, 5 nejlepších a 5 nejhorších obchodů a samostatná sekce **jen pro skutečné obchody agenta**.
+Přijaté úpravy jsou v `state/adaptations.json`. Smazáním souboru se agent vrátí k výchozím pravidlům.
+
+> Na začátku bude skutečných obchodů málo, takže se agent učí hlavně z backtestu na historii BTC.
+> Čím déle běží, tím větší váhu mají jeho vlastní obchody.
+
 ## Zprávy
 
 Agent stahuje titulky z RSS kanálů (CoinDesk, Cointelegraph a veřejné RSS Financial Times) a hodnotí je
@@ -59,7 +91,7 @@ cd trading-agent
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env      # a uprav hodnoty
-python -m pytest          # 65 testů
+python -m pytest          # 89 testů
 ```
 
 ## Doporučený postup (i když chceš jít rovnou živě)
@@ -67,7 +99,8 @@ python -m pytest          # 65 testů
 ```bash
 python -m agent.main learn --days 730      # 1) které patterny fungují
 python -m agent.main backtest --days 365   # 2) jak by strategie dopadla (srovnej s buy & hold)
-python -m agent.main news                  # 3) stav zpráv
+python -m agent.main review --days 730     # 3) rozbor obchodů, učení z chyb
+python -m agent.main news                  #    stav zpráv
 MODE=paper python -m agent.main run        # 4) pár dní nanečisto se živými daty
 MODE=live  python -m agent.main run        # 5) živě s malou částkou
 ```
@@ -99,6 +132,7 @@ MAX_ORDER_QUOTE=50          # žádná objednávka nikdy nepřesáhne 50 USDT
 | Kill-switch | – | `touch state/STOP` → okamžitě žádné nové nákupy |
 | Live potvrzení | – | bez `LIVE_CONFIRM` se live režim nespustí |
 | 10 chyb za sebou | – | agent se sám zastaví |
+| Jen BTC | `SYMBOL=BTC/USDT` | jiné aktivum se nespustí bez `ALLOW_ALTCOINS=true` |
 
 ## Známé limity (přečti si je)
 
@@ -117,6 +151,8 @@ agent/
   indicators.py  EMA, SMA, RSI, ATR
   patterns.py    23 detektorů patternů (bez pohledu do budoucnosti)
   learn.py       statistické vyhodnocení patternů (train/test)
+  review.py      rozbor obchodů, klasifikace chyb, návrh úprav, report
+  selflearn.py   smyčka učení z chyb s ověřením na nových datech
   strategy.py    pravidla vstupu a výstupu, sdílená backtestem i živým agentem
   risk.py        velikost pozice, denní limity, kill-switch
   news.py        RSS + skórování zpráv
