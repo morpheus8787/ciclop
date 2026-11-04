@@ -1,4 +1,4 @@
-"""Model zkušebního magnetického motoru z magnetů 20 x 10 x 1,7 mm.
+"""Model zkušebního magnetického motoru z magnetů 20 x 10 x 2 mm.
 
 Obsahuje dvě části:
 1. Rotor + pevné (statorové) magnety bez napájení -> výpočet momentu
@@ -22,8 +22,8 @@ HUSTOTA_PLA = 1240.0      # [kg/m3]
 class Magnet:
     sirka: float = 0.010      # tečně [m]
     vyska: float = 0.020      # podél osy rotoru [m]
-    tloustka: float = 0.0017  # směr magnetizace [m]
-    br: float = 1.29          # remanence N42 [T] (N35 ~ 1.18, N52 ~ 1.43)
+    tloustka: float = 0.002   # směr magnetizace [m]
+    br: float = 1.42          # remanence N50 [T] (N38 ~ 1.23, N42 ~ 1.29, N52 ~ 1.45)
 
     @property
     def hmotnost(self) -> float:
@@ -81,7 +81,7 @@ class Civka:
 
 @dataclass(frozen=True)
 class Napajeni:
-    napeti: float = 6.0          # 4x AA
+    napeti: float = 6.0          # napětí cívky z regulátoru (max. 6 V)
     ubytek_spinace: float = 0.1  # logický MOSFET
     # Nulová větev přes cívku: dioda 1N4148/1N4007 (0,7 V) + Zener 15 V v sérii.
     # Samotná dioda by zkratovala napětí indukované přibližujícím se magnetem
@@ -225,3 +225,28 @@ def skenuj_okna(k_t, civka, napajeni, rotor, magnet, treni):
             if p is not None:
                 vysledky.append((Okno(zap, vyp), p))
     return vysledky
+
+
+@dataclass(frozen=True)
+class BodVykonu:
+    otacky: float        # [ot/min]
+    moment: float        # užitečný moment na hřídeli [N.m]
+    vykon: float         # užitečný výkon na hřídeli [W]
+    prikon: float        # příkon cívky [W]
+    ucinnost: float      # užitečný výkon / příkon cívky
+
+
+def max_uzitecny_vykon(k_t, okno, civka, napajeni, rotor, treni) -> BodVykonu:
+    """Nejvyšší výkon, který lze odebrat z hřídele (po odečtení tření)."""
+    omegy = np.linspace(5.0, 1200.0, 240)
+    nejlepsi = None
+    for w in omegy:
+        moment, prikon, _, _ = ustaleny_cyklus(w, k_t, okno, civka, napajeni, rotor)
+        uzitecny = moment - float(treni.moment(w))
+        if uzitecny <= 0:
+            break
+        bod = BodVykonu(w * 60 / (2 * np.pi), uzitecny, uzitecny * w, prikon,
+                        uzitecny * w / max(prikon, 1e-12))
+        if nejlepsi is None or bod.vykon > nejlepsi.vykon:
+            nejlepsi = bod
+    return nejlepsi

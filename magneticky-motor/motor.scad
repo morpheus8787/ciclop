@@ -1,4 +1,4 @@
-// Zkušební pulzní motor s magnety 20 x 10 x 1,7 mm
+// Zkušební pulzní motor s magnety 20 x 10 x 2 mm
 // Rozměry odpovídají výchozím parametrům v motor_model.py.
 // Vyberte díl:  dil = "rotor" | "stojan" | "civka" | "sestava"
 dil = "sestava";
@@ -8,7 +8,7 @@ $fn = 96;
 // --- magnet ---
 mag_t = 10.0;      // tečně
 mag_h = 20.0;      // podél osy
-mag_d = 1.7;       // tloušťka (směr magnetizace)
+mag_d = 2.0;       // tloušťka (směr magnetizace)
 vule  = 0.25;      // vůle kapsy
 // --- rotor ---
 n_mag   = 8;

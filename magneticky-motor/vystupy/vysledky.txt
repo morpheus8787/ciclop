@@ -1,25 +1,31 @@
 == MAGNET ==
-B na ploše magnetu: 149 mT, v 2 mm: 119 mT, v 5 mm: 68 mT
-Hmotnost magnetu 2.55 g
+B na ploše magnetu: 190 mT, v 2 mm: 151 mT, v 5 mm: 85 mT
+Hmotnost magnetu 3.00 g
 
 == ROTOR JEN S MAGNETY (bez napájení) ==
-A) 1 odpudivý statorový magnet, mezera 2 mm: max moment 130.99 mN·m, max uložená energie 35.056 mJ, PRÁCE ZA OTÁČKU -4.7e-17 J (= 1e-15 × max. uložené energie)
-B) 'V-gate' spirála: 7 magnetů, mezera 12 -> 2 mm: max moment 108.77 mN·m, max uložená energie 25.948 mJ, PRÁCE ZA OTÁČKU +4.7e-17 J (= 2e-15 × max. uložené energie)
-C) spirála přitažlivých magnetů 12 -> 2 mm: max moment 108.77 mN·m, max uložená energie 25.948 mJ, PRÁCE ZA OTÁČKU -5.4e-17 J (= 2e-15 × max. uložené energie)
+A) 1 odpudivý statorový magnet, mezera 2 mm: max moment 205.18 mN·m, max uložená energie 54.262 mJ, PRÁCE ZA OTÁČKU -1.6e-17 J (= 3e-16 × max. uložené energie)
+B) 'V-gate' spirála: 7 magnetů, mezera 12 -> 2 mm: max moment 167.79 mN·m, max uložená energie 40.041 mJ, PRÁCE ZA OTÁČKU +1.6e-17 J (= 4e-16 × max. uložené energie)
+C) spirála přitažlivých magnetů 12 -> 2 mm: max moment 167.79 mN·m, max uložená energie 40.041 mJ, PRÁCE ZA OTÁČKU +7.8e-18 J (= 2e-16 × max. uložené energie)
 
-== PULZNÍ MOTOR (cívka + Hallova sonda, 6 V) ==
+== PULZNÍ MOTOR (cívka + Hallova sonda, 6 V z regulátoru) ==
 Cívka: 581 z drátu Ø0.30 mm, 27.4 m, R = 6.66 Ω, L = 2.68 mH
-Max. proud (stojící rotor) 0.89 A, špičkový moment 9.6 mN·m
-k_T max = 10.88 mN·m/A v úhlu 10.7° za úvratí
-Moment setrvačnosti rotoru J = 3.07e-05 kg·m²
+Max. proud (stojící rotor) 0.89 A, špičkový moment 12.1 mN·m
+k_T max = 13.64 mN·m/A v úhlu 10.7° za úvratí
+Moment setrvačnosti rotoru J = 3.37e-05 kg·m²
 Doporučené okno: zapnout 0° a vypnout 18° za úvratí
-Ustálené otáčky ≈ 5050 ot/min, příkon 0.36 W, mech. výkon 267 mW, účinnost 75 %
-Odstředivá síla na 1 magnet ≈ 21 N (drží ji stěna 0,8 mm + lepidlo)
-Roztočení na 90 % otáček ≈ 19.8 s
-Výdrž 4×AA (≈2,5 Ah): ≈ 42 h
+Ustálené otáčky ≈ 4514 ot/min, příkon 0.29 W, mech. výkon 234 mW, účinnost 80 %
+Odstředivá síla na 1 magnet ≈ 20 N (drží ji stěna 0,8 mm + lepidlo)
+Roztočení na 90 % otáček ≈ 15.5 s
+Odběr z 6×AA přes regulátor ≈ 0.40 W, výdrž ≈ 57 h
 Citlivost (stejné okno):
-  BEZ Zenerovy diody (jen dioda): 3396 ot/min, 0.93 W, účinnost 18 %
-  napájení 3,7 V (Li-ion): 2797 ot/min, 0.21 W, účinnost 65 %
-  napájení 9 V: 7860 ot/min, 0.59 W, účinnost 79 %
-  tření 2× menší: 6117 ot/min, 0.20 W, účinnost 85 %
-  tření 2× větší: 3614 ot/min, 0.65 W, účinnost 55 %
+  BEZ Zenerovy diody (jen dioda): 2872 ot/min, 0.92 W, účinnost 15 %
+  magnety N38 místo N50: 4872 ot/min, 0.33 W, účinnost 77 %
+  tření 2× menší: 5233 ot/min, 0.17 W, účinnost 84 %
+  tření 2× větší: 3504 ot/min, 0.53 W, účinnost 65 %
+
+== REGULÁTOR OTÁČEK A VÝKON ==
+  2.2 V: naprázdno  1202 ot/min, z baterie 0.16 W | MAX VÝKON    26 mW při  573 ot/min, moment 0.43 mN·m, účinnost cívky 14 %, z baterie 0.27 W
+  3.0 V: naprázdno  1901 ot/min, z baterie 0.21 W | MAX VÝKON    62 mW při  907 ot/min, moment 0.65 mN·m, účinnost cívky 20 %, z baterie 0.42 W
+  4.0 V: naprázdno  2779 ot/min, z baterie 0.27 W | MAX VÝKON   126 mW při 1289 ot/min, moment 0.93 mN·m, účinnost cívky 24 %, z baterie 0.66 W
+  5.0 V: naprázdno  3651 ot/min, z baterie 0.33 W | MAX VÝKON   208 mW při 1623 ot/min, moment 1.22 mN·m, účinnost cívky 27 %, z baterie 0.96 W
+  6.0 V: naprázdno  4514 ot/min, z baterie 0.40 W | MAX VÝKON   305 mW při 1910 ot/min, moment 1.52 mN·m, účinnost cívky 28 %, z baterie 1.32 W
