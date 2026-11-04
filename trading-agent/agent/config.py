@@ -7,6 +7,8 @@ from pathlib import Path
 
 LIVE_CONFIRM_PHRASE = "I_UNDERSTAND_THE_RISK"
 VALID_MODES = ("paper", "testnet", "live")
+# Taker poplatek za market objednávku na nejnižší úrovni objemu (konzervativně).
+DEFAULT_FEES = {"binance": 0.001, "coinbase": 0.009}
 
 
 class ConfigError(ValueError):
@@ -73,6 +75,10 @@ class Config:
     adapt_history_days: int = 730
     allow_altcoins: bool = False
     market_data: str = "exchange"
+    strategy: str = "trend"
+    entry_period: int = 20
+    exit_period: int = 10
+    trail_atr_mult: float = 3.0
 
     def validate(self) -> "Config":
         if self.mode not in VALID_MODES:
@@ -87,6 +93,12 @@ class Config:
             raise ConfigError("MAX_ORDER_QUOTE musí být kladné")
         if self.news_fail_safe not in ("block", "ignore"):
             raise ConfigError("NEWS_FAIL_SAFE musí být 'block' nebo 'ignore'")
+        if self.strategy not in ("trend", "patterns"):
+            raise ConfigError("STRATEGY musí být 'trend' nebo 'patterns'")
+        if self.exchange == "coinbase" and self.mode == "testnet":
+            raise ConfigError("Coinbase nemá testnet – použij MODE=paper (simulace se živými daty)")
+        if not 0 <= self.fee_rate < 0.05:
+            raise ConfigError("FEE_RATE musí být v [0, 0.05)")
         if self.market_data not in ("exchange", "binance_vision"):
             raise ConfigError("MARKET_DATA musí být 'exchange' nebo 'binance_vision'")
         if self.base_asset != "BTC" and not self.allow_altcoins:
@@ -115,7 +127,8 @@ def config_from_env(env: dict | None = None) -> Config:
         timeframe=env.get("TIMEFRAME", "1h"),
         mode=env.get("MODE", "paper").lower(),
         api_key=env.get("API_KEY", ""),
-        api_secret=env.get("API_SECRET", ""),
+        # Coinbase CDP klíč je víceřádkový PEM – v .env se zapisuje s \n
+        api_secret=env.get("API_SECRET", "").replace("\\n", "\n"),
         risk_per_trade=_float(env, "RISK_PER_TRADE", 0.01),
         max_position_pct=_float(env, "MAX_POSITION_PCT", 0.25),
         max_order_quote=_float(env, "MAX_ORDER_QUOTE", 50.0),
@@ -124,7 +137,7 @@ def config_from_env(env: dict | None = None) -> Config:
         stop_atr_mult=_float(env, "STOP_ATR_MULT", 2.0),
         take_profit_r=_float(env, "TAKE_PROFIT_R", 2.0),
         paper_start_equity=_float(env, "PAPER_START_EQUITY", 1000.0),
-        fee_rate=_float(env, "FEE_RATE", 0.001),
+        fee_rate=_float(env, "FEE_RATE", DEFAULT_FEES.get(env.get("EXCHANGE", "binance"), 0.001)),
         news_feeds=feeds,
         news_lookback_hours=_float(env, "NEWS_LOOKBACK_HOURS", 6.0),
         news_exit_on_panic=_bool(env, "NEWS_EXIT_ON_PANIC", True),
@@ -137,6 +150,10 @@ def config_from_env(env: dict | None = None) -> Config:
         adapt_history_days=_int(env, "ADAPT_HISTORY_DAYS", 730),
         allow_altcoins=_bool(env, "ALLOW_ALTCOINS", False),
         market_data=env.get("MARKET_DATA", "exchange").lower(),
+        strategy=env.get("STRATEGY", "trend").lower(),
+        entry_period=_int(env, "ENTRY_PERIOD", 20),
+        exit_period=_int(env, "EXIT_PERIOD", 10),
+        trail_atr_mult=_float(env, "TRAIL_ATR_MULT", 3.0),
     ).validate()
     if cfg.mode == "live" and env.get("LIVE_CONFIRM") != LIVE_CONFIRM_PHRASE:
         raise ConfigError(f"Live režim vyžaduje LIVE_CONFIRM={LIVE_CONFIRM_PHRASE}")

@@ -7,8 +7,9 @@ HOUR_MS = 3_600_000
 
 
 class FakeExchange:
-    def __init__(self, price=100.0, bars=50):
+    def __init__(self, price=100.0, bars=50, options=None):
         self.price, self.created = price, []
+        self.options = options or {}
         self.rows = [[i * HOUR_MS, 1, 2, 0.5, 1.5, 10] for i in range(bars)]
 
     def fetch_ticker(self, symbol):
@@ -29,6 +30,16 @@ class FakeExchange:
     def create_order(self, symbol, type_, side, amount):
         self.created.append((type_, side, amount))
         return {"id": "1", "filled": amount, "average": self.price}
+
+    def cost_to_precision(self, symbol, cost):
+        return f"{cost:.2f}"
+
+    def create_market_buy_order_with_cost(self, symbol, cost):
+        self.created.append(("market_cost", "buy", cost))
+        return {"id": "2"}  # Coinbase vrací jen ID
+
+    def fetch_order(self, oid, symbol):
+        return {"id": oid, "filled": 0.5, "average": self.price}
 
     def parse_timeframe(self, tf):
         return 3600
@@ -123,3 +134,10 @@ def test_market_data_switch():
     from agent.config import config_from_env
     from agent.data import BinanceVisionData, make_market_data
     assert isinstance(make_market_data(config_from_env({"MARKET_DATA": "binance_vision"})), BinanceVisionData)
+
+
+def test_coinbase_market_buy_uses_quote_cost_and_fetches_fill():
+    ex = FakeExchange(100, options={"createMarketBuyOrderRequiresPrice": True})
+    fill = ExchangeBroker(ex, "BTC/EUR").market_buy(0.5)
+    assert ex.created[-1] == ("market_cost", "buy", 50.0)
+    assert fill.qty == 0.5 and fill.price == 100

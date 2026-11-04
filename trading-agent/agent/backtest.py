@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 from .risk import RiskLimits, position_size
-from .strategy import StrategyParams, breakeven_stop, entry_context, generate_signals
+from .strategy import StrategyParams, breakeven_stop, entry_context, generate_signals, trailing_stop
 
 
 @dataclass(frozen=True)
@@ -104,19 +104,21 @@ def run_backtest(ohlcv: pd.DataFrame, params: StrategyParams, limits: RiskLimits
             q = position_size(cash, px, s, limits)
             if q > 0 and px > s and q * px * (1 + fee_rate) <= cash:
                 cash -= q * px * (1 + fee_rate)
-                pos = _Open(q, px, s, s, px + params.take_profit_r * (px - s), idx[i], i,
-                            prev["patterns"], entry_context(prev), px, px)
+                tp = px + params.take_profit_r * (px - s) if params.take_profit_r > 0 else float("inf")
+                pos = _Open(q, px, s, s, tp, idx[i], i, prev["patterns"], entry_context(prev), px, px)
         # 2) stop / take-profit uvnitř svíčky (konzervativně: stop má přednost)
         if pos:
             pos.hi, pos.lo = max(pos.hi, bar["high"]), min(pos.lo, bar["low"])
             if bar["low"] <= pos.stop:
-                reason = "breakeven" if pos.stop >= pos.entry else "stop"
+                reason = ("trailing_stop" if pos.stop > pos.initial_stop and pos.stop >= pos.entry
+                          else "breakeven" if pos.stop >= pos.entry else "stop")
                 close_pos(i, min(pos.stop, bar["open"]), reason)
             elif bar["high"] >= pos.tp:
                 close_pos(i, max(pos.tp, bar["open"]), "take_profit")
             else:  # posun stopu platí až od další svíčky
                 pos.stop = breakeven_stop(pos.stop, pos.entry, pos.initial_stop, pos.hi,
                                           params.breakeven_at_r, fee_rate)
+                pos.stop = trailing_stop(pos.stop, pos.hi, bar["atr"], params.trail_atr_mult)
         equity.append(cash + (pos.qty * bar["close"] if pos else 0.0))
 
     if pos:

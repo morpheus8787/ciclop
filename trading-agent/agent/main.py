@@ -22,6 +22,10 @@ LEARNED_FILE = "learned_patterns.json"
 
 def _base_params(cfg) -> StrategyParams:
     """Pravidla + naučené patterny, BEZ adaptací z rozboru (ty se odvozují vždy znovu)."""
+    if cfg.strategy == "trend":
+        return StrategyParams(kind="trend", stop_atr_mult=cfg.stop_atr_mult, take_profit_r=cfg.take_profit_r,
+                              entry_period=cfg.entry_period, exit_period=cfg.exit_period,
+                              trail_atr_mult=cfg.trail_atr_mult or None)
     base = StrategyParams(stop_atr_mult=cfg.stop_atr_mult, take_profit_r=cfg.take_profit_r)
     return base.with_learned(Path(cfg.state_dir) / LEARNED_FILE)
 

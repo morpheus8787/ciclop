@@ -22,7 +22,7 @@ from .strategy import WARMUP_BARS, StrategyParams
 ADAPTATIONS_FILE = "adaptations.json"
 TRADES_FILE = "trades.jsonl"
 REVIEWS_DIR = "reviews"
-MIN_VALIDATION_TRADES = 5
+MIN_VALIDATION_TRADES = 10  # méně obchodů na ověřovacích datech = nelze odlišit od náhody
 MAX_DD_WORSENING_PCT = 1.0
 
 
@@ -40,8 +40,10 @@ def _validate(test_df, base: StrategyParams, cand: StrategyParams, limits, equit
     c = run_backtest(test_df, cand, limits, equity, fee).summary()
     if is_noop(adapt):
         return {"accepted": False, "why": "není co měnit", "baseline": b, "candidate": c}
-    if b["trades"] < MIN_VALIDATION_TRADES:
-        return {"accepted": False, "why": f"málo obchodů na ověření ({b['trades']})", "baseline": b, "candidate": c}
+    if min(b["trades"], c["trades"]) < MIN_VALIDATION_TRADES:
+        return {"accepted": False, "baseline": b, "candidate": c,
+                "why": f"málo obchodů na ověření (původní {b['trades']}, upravená {c['trades']}, "
+                       f"potřeba ≥ {MIN_VALIDATION_TRADES})"}
     better = c["expectancy_r"] >= b["expectancy_r"] and c["total_return_pct"] >= b["total_return_pct"]
     dd_ok = c["max_drawdown_pct"] >= b["max_drawdown_pct"] - MAX_DD_WORSENING_PCT
     why = ("zlepšuje průměr R i výnos a nezhoršuje drawdown" if better and dd_ok

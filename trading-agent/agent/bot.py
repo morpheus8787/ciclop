@@ -11,7 +11,7 @@ from . import news as news_mod
 from .review import TradeRecord, append_record
 from .risk import RiskLimits, can_open, check_daily_loss, position_size, record_trade, roll_day
 from .store import AgentState, Position, Store
-from .strategy import StrategyParams, breakeven_stop, entry_context, generate_signals
+from .strategy import StrategyParams, breakeven_stop, entry_context, generate_signals, trailing_stop
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ class TradingAgent:
         self.state = store.load()
         self._news, self._news_at = None, 0.0
         self._closed_since_adapt = 0
+        self._atr: float | None = None  # ATR poslední uzavřené svíčky (pro trailing stop)
 
     # --- pomocné -------------------------------------------------------------
     def _commit(self, state: AgentState) -> None:
@@ -75,7 +76,7 @@ class TradingAgent:
         fill = self.broker.market_sell(pos.qty)
         pnl = (fill.price - pos.entry) * fill.qty - self.cfg.fee_rate * fill.qty * (fill.price + pos.entry)
         if reason == "stop" and pos.stop >= pos.entry:
-            reason = "breakeven"
+            reason = "trailing_stop" if self.params.trail_atr_mult else "breakeven"
         log.warning("EXIT %s: %.8f @ %.2f, PnL≈%.2f", reason, fill.qty, fill.price, pnl)
         self.store.journal(mode=self.cfg.mode, side="sell", symbol=self.cfg.symbol, qty=fill.qty,
                            price=fill.price, reason=reason, pnl=round(pnl, 4), equity=round(equity, 2),
@@ -95,7 +96,8 @@ class TradingAgent:
             log.info("Velikost pozice vyšla 0 – vstup přeskočen")
             return state
         fill = self.broker.market_buy(qty)
-        tp = fill.price + self.params.take_profit_r * (fill.price - stop)
+        # take_profit = 0 znamená bez pevného cíle (trend-following nechává zisky běžet)
+        tp = fill.price + self.params.take_profit_r * (fill.price - stop) if self.params.take_profit_r > 0 else 0.0
         ctx = {**entry_context(sig), "news_score": round(news_score, 1)}
         pos = Position(fill.qty, fill.price, stop, tp, self.clock().isoformat(), str(sig["patterns"]),
                        initial_stop=stop, max_price=fill.price, min_price=fill.price, context=ctx)
@@ -111,8 +113,9 @@ class TradingAgent:
         lo = min(pos.min_price or pos.entry, price)
         stop = breakeven_stop(pos.stop, pos.entry, pos.initial_stop or pos.stop, hi,
                               self.params.breakeven_at_r, self.cfg.fee_rate)
+        stop = trailing_stop(stop, hi, self._atr, self.params.trail_atr_mult)
         if stop != pos.stop:
-            log.warning("Stop posunut na nákupku: %.2f → %.2f", pos.stop, stop)
+            log.warning("Stop posunut nahoru: %.2f → %.2f", pos.stop, stop)
         return replace(pos, max_price=hi, min_price=lo, stop=stop)
 
     def _maybe_adapt(self) -> None:
@@ -141,7 +144,7 @@ class TradingAgent:
         pos = state.position
         if pos and price <= pos.stop:
             state = self._sell(state, "stop", equity)
-        elif pos and price >= pos.take_profit:
+        elif pos and pos.take_profit and price >= pos.take_profit:
             state = self._sell(state, "take_profit", equity)
 
         news = self.news()
@@ -157,6 +160,7 @@ class TradingAgent:
         bar_id = bars.index[-1].isoformat()
         if bar_id != state.last_bar:
             sig = generate_signals(bars, self.params).iloc[-1]
+            self._atr = float(sig["atr"]) if sig["atr"] == sig["atr"] else None
             if state.position and bool(sig["exit"]):
                 state = self._sell(state, "signal", equity)
             elif not state.position and bool(sig["entry"]):

@@ -57,3 +57,12 @@ def test_self_review_end_to_end(tmp_path):
     assert written == r.validation["accepted"]
     if written:
         assert "validation" in json.loads((tmp_path / ADAPTATIONS_FILE).read_text())
+
+
+def test_validation_rejects_when_candidate_has_too_few_trades():
+    from agent.selflearn import _validate
+    df = make_ohlcv(3000, seed=1, drift=0.001)
+    base = StrategyParams()
+    starved = StrategyParams(bullish_patterns=())  # žádné obchody
+    v = _validate(df, base, starved, LIMITS, 1000, 0.001, {"disabled_patterns": ["x"]})
+    assert not v["accepted"] and "málo obchodů" in v["why"]

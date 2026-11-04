@@ -25,6 +25,10 @@ class StrategyParams:
     bearish_patterns: tuple[str, ...] = tuple(p.name for p in PATTERNS if p.direction == BEARISH)
     blocked_contexts: tuple[str, ...] = ()   # např. ("stretch=>2ATR", "session=asia")
     breakeven_at_r: float | None = None      # posun stopu na nákupku po zisku X R
+    kind: str = "patterns"                   # "patterns" nebo "trend"
+    entry_period: int = 20                   # trend: nákup při průrazu N-denního maxima
+    exit_period: int = 10                    # trend: prodej při průrazu N-denního minima
+    trail_atr_mult: float | None = None      # trailing stop: nejvyšší cena − X × ATR
 
     def with_learned(self, path: str | Path) -> "StrategyParams":
         """Použije jen patterny, které prošly `learn` (pokud soubor existuje)."""
@@ -63,7 +67,8 @@ def context_buckets(df: pd.DataFrame) -> pd.DataFrame:
     hours = df.index.hour if isinstance(df.index, pd.DatetimeIndex) else np.zeros(len(df), dtype=int)
     vol_ratio = df["volume"] / df["vol_sma"]
     return pd.DataFrame({
-        "ctx_rsi": np.select([df["rsi"] < 50, df["rsi"] < 60, df["rsi"] <= 70], ["40-50", "50-60", "60-70"], "other"),
+        "ctx_rsi": np.select([df["rsi"] < 40, df["rsi"] < 50, df["rsi"] < 60, df["rsi"] <= 70],
+                             ["<40", "40-50", "50-60", "60-70"], ">70"),
         "ctx_stretch": np.select([stretch < 1, stretch <= 2], ["<1ATR", "1-2ATR"], ">2ATR"),
         "ctx_volatility": np.select([vol_pct < 0.5, vol_pct <= 1.0], ["low", "mid"], "high"),
         "ctx_session": np.select([hours < 8, hours < 16], ["asia", "europe"], "us"),
@@ -81,11 +86,35 @@ def blocked_mask(ctx: pd.DataFrame, blocked: tuple[str, ...]) -> pd.Series:
     return mask
 
 
+def _take_profit(df: pd.DataFrame, stop: pd.Series, params: StrategyParams) -> pd.Series:
+    if params.take_profit_r and params.take_profit_r > 0:
+        return df["close"] + params.take_profit_r * (df["close"] - stop)
+    return pd.Series(np.nan, index=df.index)  # bez pevného cíle – zisky nechat běžet
+
+
+def _trend_signals(ohlcv: pd.DataFrame, params: StrategyParams) -> pd.DataFrame:
+    """Trend-following: průraz N-denního maxima nad EMA200, výstup při průrazu M-denního minima."""
+    df = with_indicators(ohlcv)
+    ctx = context_buckets(df)
+    breakout = df["close"] > df["high"].rolling(params.entry_period).max().shift(1)
+    entry = breakout & (df["close"] > df["ema_slow"]) & df["atr"].notna()
+    entry &= ~blocked_mask(ctx, params.blocked_contexts)
+    exit_ = df["close"] < df["low"].rolling(params.exit_period).min().shift(1)
+    stop = df["close"] - params.stop_atr_mult * df["atr"]
+    out = pd.concat([df, ctx], axis=1).assign(
+        entry=entry.fillna(False), exit=exit_.fillna(False), stop=stop,
+        take_profit=_take_profit(df, stop, params), patterns=f"breakout_{params.entry_period}")
+    out.loc[out.index[:WARMUP_BARS], ["entry"]] = False
+    return out
+
+
 def generate_signals(ohlcv: pd.DataFrame, params: StrategyParams) -> pd.DataFrame:
     """Vrátí nový DataFrame se sloupci entry, exit, stop, take_profit, patterns a ctx_*.
 
     Signál na řádku i znamená: svíčka i je UZAVŘENÁ a obchod se provede na otevření i+1.
     """
+    if params.kind == "trend":
+        return _trend_signals(ohlcv, params)
     df = with_indicators(ohlcv)
     ctx = context_buckets(df)
     pats = detect_all(ohlcv)
@@ -101,7 +130,7 @@ def generate_signals(ohlcv: pd.DataFrame, params: StrategyParams) -> pd.DataFram
     exit_ = (bear_hits.any(axis=1) & trend_broken) | (df["close"] < df["ema_slow"])
 
     stop = df["close"] - params.stop_atr_mult * df["atr"]
-    take_profit = df["close"] + params.take_profit_r * (df["close"] - stop)
+    take_profit = _take_profit(df, stop, params)
     names = bull_hits.apply(lambda r: ",".join(r.index[r.values]), axis=1) if len(bull_hits.columns) else ""
 
     out = pd.concat([df, ctx], axis=1).assign(entry=entry.fillna(False), exit=exit_.fillna(False),
@@ -126,3 +155,10 @@ def breakeven_stop(stop: float, entry: float, initial_stop: float, max_price: fl
     if risk > 0 and max_price >= entry + breakeven_at_r * risk:
         return max(stop, entry * (1 + 2 * fee_rate))
     return stop
+
+
+def trailing_stop(stop: float, max_price: float, atr: float | None, trail_atr_mult: float | None) -> float:
+    """Stop se jen posouvá nahoru: nejvyšší dosažená cena − X × ATR."""
+    if not trail_atr_mult or atr is None or not np.isfinite(atr):
+        return stop
+    return max(stop, max_price - trail_atr_mult * atr)

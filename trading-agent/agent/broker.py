@@ -80,11 +80,27 @@ class ExchangeBroker:
 
     def _send(self, side: str, qty: float) -> Fill:
         amount = self._prepare(qty)
-        order = self.exchange.create_order(self.symbol, "market", side, amount)
+        if side == "buy" and self.exchange.options.get("createMarketBuyOrderRequiresPrice"):
+            # Coinbase: market nákup se zadává částkou v quote měně (EUR/USDC), ne množstvím BTC
+            cost = float(self.exchange.cost_to_precision(self.symbol, amount * self.price()))
+            order = self.exchange.create_market_buy_order_with_cost(self.symbol, cost)
+        else:
+            order = self.exchange.create_order(self.symbol, "market", side, amount)
+        order = self._refresh(order)
         filled = float(order.get("filled") or amount)
         avg = float(order.get("average") or order.get("price") or self.price())
         log.info("%s %s %.8f @ %.2f (id=%s)", side.upper(), self.symbol, filled, avg, order.get("id"))
         return Fill(filled, avg)
+
+    def _refresh(self, order: dict) -> dict:
+        """Některé burzy (Coinbase) vrací po odeslání jen ID – dotáhneme skutečné plnění."""
+        if order.get("filled") and order.get("average"):
+            return order
+        try:
+            return self.exchange.fetch_order(order["id"], self.symbol) or order
+        except Exception as exc:
+            log.warning("Nepodařilo se načíst detail objednávky %s: %s", order.get("id"), exc)
+            return order
 
     def market_buy(self, qty: float) -> Fill:
         return self._send("buy", qty)
