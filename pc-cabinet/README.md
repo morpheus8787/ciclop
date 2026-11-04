@@ -21,7 +21,10 @@ Parametrický model průmyslové PC skříně (inspirace: stojací počítačov�
 ## Materiál a výroba
 - Korpus: DC01 **1,5 mm**, svařovaný; dveře, čelo, vana zásuvky: DC01 **1,0 mm**; police pozink 1,0 mm; držák VESA 2,0 mm.
 - Zasklení: polykarbonát 4 mm, uchycení na 8 přivařovacích/nalisovaných svornících M4 (otvory Ø4,2 ve dveřích).
-- Ohyby: vnitřní R = tloušťka plechu, **K‑faktor 0,44**, všechny ohyby 90°.
+- Ohyby: všechny 90°, rozvin počítán **odečtem ohybu** podle ohraňovny:
+  **t = 1,5 mm → 2,5 mm**, **t = 1,0 mm → 2,0 mm** na ohyb
+  (rozvin = součet vnějších rozměrů − počet ohybů × odečet).
+  Držák VESA (t = 2,0 mm) zatím počítán K‑faktorem 0,44 (odečet ≈ 3,48 mm).
 - Povrch: prášková barva RAL 7035 (korpus) / RAL 5010 (dveře, čelo).
 - Hmotnost plechových dílů ≈ 62 kg.
 - Nakupované díly: 4× přivařovací pant, 3× vačkový zámek Ø20, 1 pár teleskopických pojezdů 400 mm, příchytky police.
@@ -35,8 +38,8 @@ Parametrický model průmyslové PC skříně (inspirace: stojací počítačov�
 | `nahled_*.png` | náhledy (zavřeno, bez dveří, zezadu, ukázka rozvinu) |
 
 Rozviny mají pravoúhlé rohové výřezy (relief). Rohy korpusu se po ohnutí zavaří a zabrousí.
-**Před výrobou ověřte K‑faktor a poloměr ohybu s vaší ohraňovnou.** Pokud se liší, změňte
-`K_FACTOR` v `sheetmetal.py` a model přegenerujte.
+Odečty ohybů jsou v tabulce `BEND_DEDUCTION` v `sheetmetal.py`; při změně stačí upravit
+hodnoty a model přegenerovat.
 
 ## Přegenerování
 ```bash

@@ -14,8 +14,12 @@ from dataclasses import dataclass
 import cadquery as cq
 from cadquery.occ_impl.exporters.dxf import DxfDocument
 
-K_FACTOR = 0.44
+K_FACTOR = 0.44  # fallback only, for thicknesses missing in BEND_DEDUCTION
 STEEL_DENSITY = 7.85e-6  # kg / mm^3
+
+# Bend deduction per 90° bend from the press-brake shop (mm), by thickness.
+# Flat length = sum of outer dimensions - number_of_bends * deduction.
+BEND_DEDUCTION = {1.0: 2.0, 1.5: 2.5}
 
 
 @dataclass(frozen=True)
@@ -62,8 +66,15 @@ class SheetPart:
         return self.t if self.radius is None else self.radius
 
     @property
+    def bend_deduction(self) -> float:
+        if self.t in BEND_DEDUCTION:
+            return BEND_DEDUCTION[self.t]
+        return 2 * self.setback - math.pi / 2 * (self.r + K_FACTOR * self.t)
+
+    @property
     def bend_allowance(self) -> float:
-        return math.pi / 2 * (self.r + K_FACTOR * self.t)
+        # consistent with the deduction: BD = 2 * (R + t) - BA
+        return 2 * self.setback - self.bend_deduction
 
     @property
     def setback(self) -> float:
@@ -181,7 +192,7 @@ class SheetPart:
             msp.add_text(note, height=4, dxfattribs={"layer": "TEXT"}).set_placement(mid)
         w, h = self.flat_size()
         label = (f"{self.name} | {self.material} t={self.t:g} | {qty} ks | "
-                 f"rozvin {w:.1f} x {h:.1f} | K={K_FACTOR} R={self.r:g}")
+                 f"rozvin {w:.1f} x {h:.1f} | odecet ohybu {self.bend_deduction:.2f} mm")
         msp.add_text(label, height=6, dxfattribs={"layer": "TEXT"}).set_placement((0, -15))
         doc.document.saveas(path)
 
