@@ -85,3 +85,41 @@ def test_fetch_recent_and_history():
     assert len(fetch_recent(ex, "BTC/USDT", "1h")) == 29  # poslední svíčka ještě otevřená
     hist = fetch_history(ex, "BTC/USDT", "1h", days=2)
     assert hist.index.is_monotonic_increasing and len(hist) == 29
+
+
+class _Resp:
+    def __init__(self, payload):
+        import json
+        self.body = json.dumps(payload).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def read(self):
+        return self.body
+
+
+def test_binance_vision_client_parses_klines_and_ticker():
+    from agent.data import BinanceVisionData
+    urls = []
+
+    def opener(url):
+        urls.append(url)
+        if "klines" in url:
+            return _Resp([[0, "1", "2", "0.5", "1.5", "10", 1, "0", 1, "0", "0", "0"]])
+        return _Resp({"symbol": "BTCUSDT", "price": "78000.5"})
+
+    c = BinanceVisionData(opener)
+    assert c.fetch_ohlcv("BTC/USDT", "1h", since=5, limit=5000) == [[0, 1.0, 2.0, 0.5, 1.5, 10.0]]
+    assert "symbol=BTCUSDT" in urls[0] and "startTime=5" in urls[0] and "limit=1000" in urls[0]
+    assert c.fetch_ticker("BTC/USDT")["last"] == 78000.5
+    assert c.parse_timeframe("4h") == 14400
+
+
+def test_market_data_switch():
+    from agent.config import config_from_env
+    from agent.data import BinanceVisionData, make_market_data
+    assert isinstance(make_market_data(config_from_env({"MARKET_DATA": "binance_vision"})), BinanceVisionData)

@@ -72,6 +72,7 @@ class Config:
     adapt_min_trades: int = 15
     adapt_history_days: int = 730
     allow_altcoins: bool = False
+    market_data: str = "exchange"
 
     def validate(self) -> "Config":
         if self.mode not in VALID_MODES:
@@ -86,6 +87,8 @@ class Config:
             raise ConfigError("MAX_ORDER_QUOTE musí být kladné")
         if self.news_fail_safe not in ("block", "ignore"):
             raise ConfigError("NEWS_FAIL_SAFE musí být 'block' nebo 'ignore'")
+        if self.market_data not in ("exchange", "binance_vision"):
+            raise ConfigError("MARKET_DATA musí být 'exchange' nebo 'binance_vision'")
         if self.base_asset != "BTC" and not self.allow_altcoins:
             raise ConfigError("Zatím obchodujeme jen BTC (pro jiné aktivum nastav ALLOW_ALTCOINS=true)")
         if self.adapt_every_trades < 1 or self.adapt_min_trades < 5:
@@ -133,6 +136,7 @@ def config_from_env(env: dict | None = None) -> Config:
         adapt_min_trades=_int(env, "ADAPT_MIN_TRADES", 15),
         adapt_history_days=_int(env, "ADAPT_HISTORY_DAYS", 730),
         allow_altcoins=_bool(env, "ALLOW_ALTCOINS", False),
+        market_data=env.get("MARKET_DATA", "exchange").lower(),
     ).validate()
     if cfg.mode == "live" and env.get("LIVE_CONFIRM") != LIVE_CONFIRM_PHRASE:
         raise ConfigError(f"Live režim vyžaduje LIVE_CONFIRM={LIVE_CONFIRM_PHRASE}")

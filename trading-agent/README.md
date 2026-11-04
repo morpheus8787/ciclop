@@ -82,7 +82,9 @@ slovníkem klíčových slov. Ten je auditovatelný, bez „černé skříňky�
 
 **K účtu na FT:** agent se do FT nepřihlašuje a nestahuje placené články. Automatizované stahování
 s osobním přihlášením by porušovalo podmínky FT. Používá jen veřejné RSS titulky, a to na tento účel stačí.
-Feedy jdou upravit v `NEWS_FEEDS`. Aktuální vyhodnocení zpráv ukáže `python -m agent.main news`.
+Feedy jdou upravit v `NEWS_FEEDS`.
+
+**Tržní data:** `MARKET_DATA=binance_vision` bere svíčky z veřejného `data-api.binance.vision`. To se hodí tam, kde je `api.binance.com` blokované (některé země, cloud servery). Platí pro `learn`, `backtest`, `review` a paper režim. Testnet a live berou data vždy přímo z burzy, na které obchodují. Aktuální vyhodnocení zpráv ukáže `python -m agent.main news`.
 
 ## Instalace
 
@@ -91,7 +93,7 @@ cd trading-agent
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env      # a uprav hodnoty
-python -m pytest          # 89 testů
+python -m pytest          # 91 testů
 ```
 
 ## Doporučený postup (i když chceš jít rovnou živě)

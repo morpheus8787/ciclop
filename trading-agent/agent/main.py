@@ -47,7 +47,7 @@ def _limits(cfg) -> RiskLimits:
 
 
 def cmd_learn(cfg, args):
-    ex = data.make_exchange(cfg)
+    ex = data.make_market_data(cfg)
     df = data.fetch_history(ex, cfg.symbol, cfg.timeframe, args.days)
     report = learn.select_patterns(df, horizon=args.horizon)
     learn.save(report, Path(cfg.state_dir) / LEARNED_FILE)
@@ -63,7 +63,7 @@ def cmd_learn(cfg, args):
 
 
 def cmd_backtest(cfg, args):
-    ex = data.make_exchange(cfg)
+    ex = data.make_market_data(cfg)
     df = data.fetch_history(ex, cfg.symbol, cfg.timeframe, args.days)
     res = run_backtest(df, _params(cfg), _limits(cfg), cfg.paper_start_equity, cfg.fee_rate)
     buy_hold = (df["close"].iloc[-1] / df["close"].iloc[0] - 1) * 100
@@ -73,7 +73,7 @@ def cmd_backtest(cfg, args):
 
 
 def cmd_review(cfg, args):
-    ex = data.make_exchange(cfg)
+    ex = data.make_market_data(cfg)
     r = _run_review(cfg, ex, args.days)
     o = r.report["overall"]
     print(f"Obchodů v rozboru: {o['n']} (z toho skutečných: {r.live_report['overall']['n'] if r.live_report else 0})")
@@ -97,12 +97,13 @@ def cmd_news(cfg, args):
 
 
 def cmd_run(cfg, args):
-    ex = data.make_exchange(cfg)
     store = Store(cfg.state_dir)
     if cfg.mode == "paper":
+        ex = data.make_market_data(cfg)
         paper = store.load().paper or {"cash": cfg.paper_start_equity, "base": 0.0}
         broker = PaperBroker(ex, cfg.symbol, paper["cash"], paper["base"], cfg.fee_rate)
-    else:
+    else:  # testnet/live: data i příkazy ze stejné burzy, ať sedí ceny s tím, co se skutečně plní
+        ex = data.make_exchange(cfg)
         broker = ExchangeBroker(ex, cfg.symbol)
     def adapt():
         _run_review(cfg, ex, cfg.adapt_history_days)
