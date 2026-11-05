@@ -1,0 +1,28 @@
+dil;ks;material;tloustka_mm;rozvin_x_mm;rozvin_y_mm;pocet_ohybu;povrch;hmotnost_kg;pozn
+01 Bok spodni levy;1;DC01;1.5;558.0;998.5;1;RAL 7035;6.52;svařenec korpusu
+02 Bok spodni pravy;1;DC01;1.5;998.5;558.0;1;RAL 7035;6.52;svařenec korpusu
+03 Zada spodni;1;DC01;1.5;650.0;998.5;0;RAL 7035;7.00;svařenec korpusu
+04 Pracovni deska;1;DC01;1.5;577.5;650.0;1;RAL 7035;4.39;svařenec korpusu
+05 Dno se soklem;1;DC01;1.5;642.0;647.0;2;RAL 7035;4.89;svařenec korpusu
+06 Mezidno nadprazi dveri;1;DC01;1.5;584.5;647.0;1;RAL 7035;4.42;svařenec korpusu
+07 Police stavitelna;1;DX51D+Z (pozink);1.0;546.0;643.0;2;pozink;2.76;samostatný díl
+08 Dvere spodni;1;DC01;1.0;806.0;680.0;4;RAL 5010;4.24;samostatný díl
+09 Celo zasuvky;1;DC01;1.0;132.0;680.0;4;RAL 5010;0.67;samostatný díl
+10 Vana zasuvky klavesnice;1;DC01;1.0;737.0;556.0;4;RAL 7035;3.10;samostatný díl
+11 Bok horni levy;1;DC01;1.5;336.0;648.5;1;RAL 7035;2.41;svařenec korpusu
+12 Bok horni pravy;1;DC01;1.5;648.5;336.0;1;RAL 7035;2.41;svařenec korpusu
+13 Zada horni;1;DC01;1.5;650.0;648.5;0;RAL 7035;4.78;svařenec korpusu
+14 Strop horni;1;DC01;1.5;337.5;650.0;1;RAL 7035;2.58;svařenec korpusu
+15 Dno monitoru;1;DC01;1.5;344.5;647.0;1;RAL 7035;2.60;svařenec korpusu
+16 Dvere monitoru s oknem;1;DC01;1.0;581.0;680.0;4;RAL 5010;1.55;samostatný díl
+17 Zaskleni PC 4 mm;1;polykarbonat 4 mm;4.0;410.0;620.0;0;cira;1.22;samostatný díl
+18 Drzak VESA 75-100;1;DC01;2.0;300.0;195.4;2;RAL 7035;0.92;samostatný díl
+Pant privarovaci;1;nakupovaný díl;;;;;;;
+Pant privarovaci;1;nakupovaný díl;;;;;;;
+Pant privarovaci;1;nakupovaný díl;;;;;;;
+Pant privarovaci;1;nakupovaný díl;;;;;;;
+Zamek vackovy 20 mm;1;nakupovaný díl;;;;;;;
+Zamek vackovy 20 mm;1;nakupovaný díl;;;;;;;
+Zamek vackovy 20 mm;1;nakupovaný díl;;;;;;;
+Pojezd teleskopicky 400 mm;1;nakupovaný díl;;;;;;;
+Pojezd teleskopicky 400 mm;1;nakupovaný díl;;;;;;;
