@@ -430,7 +430,7 @@ if (PART == "assembly") {
     both() frame_r() { color("LightBlue", 0.35) face_extrude(-PLATE_T, 0) plate2d();
                        color("SaddleBrown") render() bezel_local(); }
     if (SHOW_COVER) color("Wheat") render() crown();
-    if (SHOW_COVER) color("SaddleBrown") translate([0, 0, H + CROWN_T + 0.3]) intersection() {      // hlína (náhled)
+    if (SHOW_COVER) color("SaddleBrown") translate([0, 0, H + CROWN_T + 0.3]) render() intersection() {      // hlína (náhled)
         bed_sector(BED_H - 3); difference() { cylinder(r = DOME_IN - BED_WALL, h = 20, $fn = 96);
             scale([PIT[0][0] * A + 0.5 + BED_WALL, PIT[0][0] * B + 0.5 + BED_WALL, 1]) cylinder(r = 1, h = 20, $fn = 96);
             for (p = EXITS) translate([p[0], p[1], 0]) cylinder(d = 12, h = 20); } }
