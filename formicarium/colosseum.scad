@@ -48,7 +48,36 @@ TUNNELS = [
 WATER_Z = Z0 - 4;
 FILL = [[120, WATER_Z], [30, WATER_Z]];
 ZTF = 41;
-VENTS = [[70, 63, H], [82, 85, H]];
+VENTS = [[70, 60, H], [85, 88.5, H]];
+// ---------- organické hnízdo („přírodní“ styl): jeden členitý prostor, ze stěn
+//            vystupují zaoblené římsy/police s mírným sklonem, cesta se klikatí nahoru
+//            [x1, z1, r1] -> [x2, z2, r2]: římsa od stěny (silnější) k hrotu (tenčí)
+LEDGES = [   // řetězce bodů [x, z, r]: od stěny (silná) přes prohyb k hrotu
+    [[97, 28.5, 4.6], [70, 26.5, 3.6], [44, 26.0, 2.8]],      // nad vlhkým dnem, průchod vlevo
+    [[19, 35.5, 3.8], [33, 33.5, 2.4]],                       // polička vlevo
+    [[97, 39.0, 3.4], [80, 40.5, 2.2]],                       // výstupek vpravo
+    [[38, 52.0, 4.6], [58, 49.0, 3.6], [76, 48.5, 2.8]],      // průchod vpravo
+    [[97, 68.5, 4.6], [80, 65.5, 3.6], [66, 66.0, 2.8]],      // průchod vlevo
+    [[97, 57.5, 3.2], [86, 59.5, 2.2]],                       // výstupek vpravo
+    [[54, 60.5, 3.0], [61, 61.5, 2.0]],                       // výstupek vlevo
+    [[77, 84.0, 3.4], [83, 83.0, 1.8]],                       // komín nahoře – střídavé výstupky
+    [[93, 93.0, 3.4], [87, 94.0, 1.8]],
+    [[77, 101.0, 3.4], [82, 101.5, 1.8]]];
+// zvlnění stěn: hrbolky a krápníky [x, z, r]
+BUMPS = [[24, 22, 2.2], [24, 30, 1.8], [40, 16, 2.0], [62, 15.5, 2.4], [80, 16, 1.8],
+         [88.5, 21, 2.0], [88.5, 46, 2.2], [52, 39.5, 2.0], [60, 39.5, 1.6], [45, 56.5, 1.8],
+         [70, 52, 1.6], [88.5, 75, 2.0], [70, 73.5, 2.0], [61, 72, 1.6], [80, 107, 2.0]];
+HUMID_Z = 24;                                // pod první římsou = vlhké dno se sádrou
+module ledge2d(l) for (i = [0 : len(l) - 2]) hull() {
+    translate([l[i][0], l[i][1]]) circle(l[i][2], $fn = 32);
+    translate([l[i + 1][0], l[i + 1][1]]) circle(l[i + 1][2], $fn = 32);
+}
+module nest2d() offset(r = 0.8) offset(r = -0.8) difference() {      // finální vyhlazení (čistá geometrie)
+    offset(r = 2.5) offset(r = -5) offset(r = 2.5) offset(delta = -5) plate2d();   // zaoblené rohy
+    for (l = LEDGES) ledge2d(l);
+    for (b = BUMPS) translate([b[0], b[1]]) circle(b[2], $fn = 24);
+}
+module humid2d() intersection() { nest2d(); translate([0, 0]) square([200, HUMID_Z]); }
 function pit_s(k) = PIT[k][0] * R_FACE;
 FACE_PTS = [[0, 0], [R_FACE, 0], [R_FACE, H], [pit_s(0), H], [pit_s(0), PIT[0][1]], [pit_s(1), PIT[0][1]],
             [pit_s(1), PIT[1][1]], [pit_s(2), PIT[1][1]], [pit_s(2), PIT[2][1]], [0, PIT[2][1]]];
@@ -68,8 +97,8 @@ function g_s(d) = let(a = A - WALL - CH_D / 2, b = B - WALL - CH_D / 2,
                       aa = p * p, bb = 2 * (p * q), cc = q * q - 1)
     (-bb + sqrt(bb * bb - 4 * aa * cc)) / (2 * aa);
 LINKS = [[[80, 5, 46], [g_s(CORE_T + 3), CORE_T + 3, GZ1]],
-         [[78, 5, 63], [g_s(CORE_T + 3), CORE_T + 3, GZ2]],
-         [[82, 5, 84], [g_s(CORE_T + 3), CORE_T + 3, GZ3]]];
+         [[78, 5, 58.5], [g_s(CORE_T + 3), CORE_T + 3, GZ2]],
+         [[85, 5, 88.5], [g_s(CORE_T + 3), CORE_T + 3, GZ3]]];
 G_RAMPS  = [[10, 22], [60, 72], [108, 120], [158, 170]];          // G1 -> G2
 G_RAMPS2 = [[35, 47], [85, 97], [133, 145], [183, 195]];          // G2 -> G3
 G_RAMPS3 = [[70, 64], [110, 116], [20, 14], [160, 166]];          // G3 -> chodba v atice
@@ -167,7 +196,7 @@ module gallery_niches() for (k = [0 : 2]) for (j = [0 : len(G_NICHES) - 1]) let(
 module links_local() for (l = LINKS) capsule3(l[0], l[1], TUN_W);
 module queen_links() both() {
     capsule3([0, QY, QUEEN_Z[0] + 3], [10, QY - 4, QUEEN_Z[0] + 3], TUN_W);
-    capsule3([10, QY - 4, QUEEN_Z[0] + 3], wr([52, 5, 45]), TUN_W);
+    capsule3([10, QY - 4, QUEEN_Z[0] + 3], wr([52, 5, 42]), TUN_W);
 }
 // jáma: stupně dolů do středu + spirálové chodbičky ve stěnách stupňů
 module pit() {
@@ -189,7 +218,12 @@ module queen_room() {
 
 // ---------- hnízdo na pravém řezu (místní souřadnice)
 module nest_local() {
-    nest_cavities(CHAMBERS, TUNNELS, FILL, VENTS, []);
+    face_extrude(-1, CH_D * 0.45) nest2d();                    // stěny odstupňované do hloubky
+    face_extrude(CH_D * 0.45 - 0.01, CH_D * 0.75) offset(r = -1) nest2d();
+    face_extrude(CH_D * 0.75 - 0.01, CH_D) offset(r = -2) nest2d();
+    face_extrude(CH_D - 0.01, CH_D + PLASTER_T) offset(delta = -1.5) humid2d();   // sádra, ryska 1,5 mm
+    face_extrude(CH_D - 0.01, CH_D + PLASTER_T) translate([24, WATER_Z - 2]) square([62, 6]);   // spojení s vodním kanálem
+    nest_cavities([], [], FILL, VENTS, []);
     links_local();
     vent_recesses(VENTS);
     screw_pilots(SCREWS);
@@ -298,7 +332,7 @@ module windows2d() difference() {
     }
     for (b = BEZEL_BRIDGES) translate(b[0]) square(b[1]);
 }
-module bezel_local() bezel(SCREWS, MAGNETS) { plate2d(); outer2d(); windows2d(); }
+module bezel_local() bezel(SCREWS, MAGNETS) { plate2d(); outer2d(); }   // jedno velké okno
 module cover_local(label, mirrored = false) difference() {
     cover(MAGNETS) outer2d();
     face_extrude(-BEZEL_T - COVER_T - 1, -BEZEL_T - COVER_T + 0.6) translate([56, 30])
@@ -447,3 +481,4 @@ if (PART == "assembly") {
 }
 SHOW_COVER = true;
 if (PART == "face_view")    { frame_r_inv() core_r(); frame_r_inv() frame_r() bezel_local(); }
+if (PART == "nest_view")    frame_r_inv() core_r();
