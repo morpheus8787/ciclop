@@ -27,7 +27,10 @@ U = [cos(TH_R), sin(TH_R)];  N = [-sin(TH_R), cos(TH_R)];
 // ---------- stupňovitá jáma (aréna) uprostřed: [měřítko elipsy, výška podlahy]
 PIT = [[0.62, 88], [0.45, 70], [0.30, 52]];
 QY = 15;  GLASS_R = 12;  QUEEN_R = 14;  QUEEN_Z = [30, PIT[2][1] - 3.2];
-DOME_D = 150;  DOME_GROOVE = 2.6;  CROWN_T = 4;
+DOME_D = 180;  DOME_GROOVE = 2.6;  CROWN_T = 4;
+// záhonek na hlínu a trávu nahoře (pod kopulí), výlezy z chodby v atice
+BED_H = 12;  BED_WALL = 2;  BED_SECTOR = [-30, 210];     // jen nad tělem, ne nad výsečí/jádry
+EXITS = [[0, 75], [-40, 62], [40, 62]];                 // výlezové věžičky v záhonku
 R_FACE = 1 / sqrt(pow(cos(-90 + GAP / 2) / A, 2) + pow(sin(-90 + GAP / 2) / B, 2));   // délka řezu
 
 // ---------- hnízdo na řezu (místní souřadnice řezu: x = vzdálenost od osy)
@@ -210,6 +213,7 @@ module body() difference() {
     gallery_cut(G2, GH, CH_D);
     gallery_cut(G3, GH, CH_D);
     attic_tunnel();
+    exit_tunnels();
     gallery_niches();
     gallery_ramps();
     both() frame_r() links_local();
@@ -218,17 +222,41 @@ module body() difference() {
 }
 
 // ---------- věnec: nese pás (drážka dole) a kopuli (drážka nahoře)
-CROWN_VENTS = [[0, -89], [-16, -87], [16, -87]];
+CROWN_VENTS = [[-30, -92], [30, -92], [-48, -85], [48, -85]];   // nad výsečí, mimo kopuli
+function pit_r(a) = 1 / sqrt(pow(cos(a) / (PIT[0][0] * A), 2) + pow(sin(a) / (PIT[0][0] * B), 2));
+module bed_sector(h) linear_extrude(h) polygon(concat([[0, 0]],
+    [ for (a = [BED_SECTOR[0] : 5 : BED_SECTOR[1]]) 200 * [cos(a), sin(a)] ]));
+DOME_IN = DOME_D / 2 - DOME_GROOVE / 2 - 1;              // vnější stěna záhonku uvnitř kopule
+module bed_walls() translate([0, 0, H + CROWN_T]) intersection() {
+    bed_sector(BED_H);
+    union() {
+        difference() { cylinder(r = DOME_IN, h = BED_H, $fn = 160); translate([0, 0, -1]) cylinder(r = DOME_IN - BED_WALL, h = BED_H + 2, $fn = 160); }
+        difference() { scale([PIT[0][0] * A + 0.5 + BED_WALL, PIT[0][0] * B + 0.5 + BED_WALL, 1]) cylinder(r = 1, h = BED_H, $fn = 160);
+                       translate([0, 0, -1]) scale([PIT[0][0] * A + 0.5, PIT[0][0] * B + 0.5, 1]) cylinder(r = 1, h = BED_H + 2, $fn = 160); }
+        for (a = BED_SECTOR) rotate([0, 0, a]) translate([pit_r(a), a < 0 ? 0 : -BED_WALL, 0]) cube([DOME_IN - pit_r(a), BED_WALL, BED_H]);
+    }
+}
+// výlezová věžička: trubka nad úroveň hlíny se dvěma oblouky nahoře
+module exit_tower(p) translate([p[0], p[1], H + CROWN_T]) difference() {
+    cylinder(d = 12, h = BED_H + 4, $fn = 32);
+    for (r = [0, 90]) rotate([0, 0, r]) translate([0, 0, BED_H - 1]) rotate([90, 0, 0]) {
+        translate([-2.5, 0, -10]) cube([5, 3.5, 20]); translate([0, 3.5, -10]) cylinder(d = 5, h = 20, $fn = 20); }
+}
+module exit_holes() for (p = EXITS) translate([p[0], p[1], H - 2]) cylinder(d = TUN_W + 1, h = BED_H + CROWN_T + 10, $fn = 24);
+// výlezy: z chodby v atice šikmo nahoru do věžiček
+module exit_tunnels() for (p = EXITS) let(t = atan2(p[1], p[0])) capsule3(g4(t), [p[0], p[1], H + 2], TUN_W);
+
 module crown() difference() {
-    e_prism(A + 9, B + 9, H, CROWN_T);
+    union() { e_prism(A + 9, B + 9, H, CROWN_T); bed_walls(); for (p = EXITS) exit_tower(p); }
     e_prism(PIT[0][0] * A + 0.5, PIT[0][0] * B + 0.5, H - 1, 10);
     difference() { e_prism(BAND_R + BAND_GROOVE / 2, B + 5.5 + BAND_GROOVE / 2, H - 1, 4);
                    e_prism(BAND_R - BAND_GROOVE / 2, B + 5.5 - BAND_GROOVE / 2, H - 2, 6); }
-    translate([0, 0, H + CROWN_T - 2.5]) difference() {
+    translate([0, 0, H + CROWN_T - 2.5]) difference() {        // drážka pro nalepení kopule
         cylinder(d = DOME_D + DOME_GROOVE, h = 5, $fn = 160); translate([0, 0, -1]) cylinder(d = DOME_D - DOME_GROOVE, h = 7, $fn = 160); }
     for (v = CROWN_VENTS) translate([v[0], v[1], H - 1]) { cylinder(d = 6, h = 10, $fn = 24);
         translate([0, 0, CROWN_T + 1 - MESH_RECESS]) cylinder(d = MESH_D + 0.4, h = 2, $fn = 32); }
     both() for (v = VENTS) let(p = wr([v[0], VENT_Y, 0])) translate([p[0], p[1], H - 1]) cylinder(d = 6, h = 10, $fn = 24);
+    exit_holes();
 }
 
 // ---------- podstavec s obrubou (pás stojí v drážce obruby)
@@ -376,7 +404,7 @@ module placed_feeder() translate([FEEDER_POS[0], FEEDER_POS[1], 0]) children();
 if (PART == "core_right")   print_core() frame_r_inv() core_r();
 if (PART == "core_left")    mirror([1, 0, 0]) print_core() frame_r_inv() core_r();
 if (PART == "body")         body();
-if (PART == "crown")        translate([0, 0, H + CROWN_T]) mirror([0, 0, 1]) crown();   // vrchem dolů
+if (PART == "crown")        translate([0, 0, -H]) crown();                              // záhonkem nahoru
 if (PART == "plinth_left")  rotate([0, 0, 90]) intersection() { plinth(); translate([-500, -500, 0]) cube([500, 1000, 100]); }
 if (PART == "plinth_right") rotate([0, 0, 90]) intersection() { plinth(); translate([0, -500, 0]) cube([500, 1000, 100]); }
 if (PART == "bezel_right")  print_bezel() bezel_local();
@@ -402,6 +430,12 @@ if (PART == "assembly") {
     both() frame_r() { color("LightBlue", 0.35) face_extrude(-PLATE_T, 0) plate2d();
                        color("SaddleBrown") render() bezel_local(); }
     if (SHOW_COVER) color("Wheat") render() crown();
+    if (SHOW_COVER) color("SaddleBrown") translate([0, 0, H + CROWN_T]) intersection() {      // hlína (náhled)
+        bed_sector(BED_H - 3); difference() { cylinder(r = DOME_IN - BED_WALL, h = 20, $fn = 96);
+            scale([PIT[0][0] * A + 0.5 + BED_WALL, PIT[0][0] * B + 0.5 + BED_WALL, 1]) cylinder(r = 1, h = 20, $fn = 96);
+            for (p = EXITS) translate([p[0], p[1], 0]) cylinder(d = 12, h = 20); } }
+    if (SHOW_COVER) color("OliveDrab") for (a = [-20 : 14 : 200]) let(r = (pit_r(a) + DOME_IN) / 2)
+        translate([r * cos(a), r * sin(a), H + CROWN_T + BED_H - 3]) cylinder(d1 = 7, d2 = 0.5, h = 9, $fn = 6);   // tráva
     if (SHOW_COVER) color("LightBlue", 0.25) dome_preview();
     if (SHOW_COVER) color("LightBlue", 0.15) band_preview();
     placed_tower() { color("Wheat") render() tower();
