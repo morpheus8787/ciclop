@@ -7,7 +7,7 @@ Formicarium).
 
 | Model | Rozměr (Š × H × V) | Díly |
 |---|---|---|
-| **Koloseum v5** (Řím) | podstavec 344 × 218 mm, budova 224 × 186 × 118 mm (+ kopule Ø 150) | tělo, 2 hnízdní jádra (levé/pravé), věnec, podstavec (2 díly), 2 rámečky + 2 víčka, vodní věž + víčko, krmítko + víko + poklop, čepička kopule, zátky |
+| **Koloseum v5** (Řím) | podstavec 344 × 218 mm, budova 224 × 186 × 118 mm (+ kopule Ø 180) | tělo, 2 hnízdní jádra (levé/pravé), věnec, podstavec (2 díly), 2 rámečky + 2 víčka, vodní věž + víčko, krmítko + víko + poklop, čepička kopule, zátky |
 | **Parthenón** (Atény) | 236 × 172 × 122 mm | jádro, chrám (sloupy + kladí), střecha, rámeček, víčko, zátky |
 | **Šikmá věž** (Pisa) | 95 × 42 × 228 mm | jádro, věž dole, věž nahoře, zvonice, rámeček, víčko, zátky |
 
@@ -29,10 +29,15 @@ tisknou se **bez podpěr** a jsou ověřené jako uzavřená (watertight) těles
   dnu. Ve stěnách stupňů jsou zapuštěné spirálové chodbičky.
 - **Na dně arény je sklo Ø 24 mm** a pod ním **velká komůrka královny** (Ø 28 × 19 mm). Je
   vidět shora skrz arénu, má jen chodby do obou hnízd, a proto je klidná a tmavší.
-- **Galerie za oblouky** 1. a 2. patra vedou kolem celé stavby, jsou propojené šikmými
-  rampami a napojené na obě hnízda. Skrz sloupy je vidět, jak mravenci chodí dokola.
+- **Galerie za oblouky ve všech 3 patrech** + **chodba v atice** za okénky, kolem celé stavby,
+  propojené šikmými rampami a napojené na obě hnízda. Ve vnitřní stěně galerií jsou výklenky
+  a komůrky. Skrz 64 širokých oblouků (s polosloupy, hlavicemi a archivoltami) je vidět, jak
+  mravenci chodí dokola. Mezi patry jsou vystupující římsy se zkosením 45°, dole sokl.
+- **Záhonek nahoře:** věnec nese kolem jámy záhonek ve tvaru C (hlína ~10 mm + tráva/mech),
+  **3 výlezové věžičky** (šikmé chodby z atiky nahoru, s obloučky nad úrovní hlíny) a drážku,
+  do které se **nalepí kopule Ø 180 mm**. Nad výsečí záhonek není (větrání hnízd).
 - **Průhledný pás kolem celého Kolosea** (fólie 0,5 mm v drážce obruby podstavce a věnce)
-  uzavře výseč i oblouky. **Věnec s kopulí Ø 150 mm** kryje celý střed. Vše uvnitř pásu
+  uzavře výseč i oblouky. **Věnec se záhonkem a kopulí Ø 180 mm** kryje celý střed. Vše uvnitř pásu
   a kopule je uzavřená aréna (outworld).
 - **Vodní věž** vlevo (spojené nádoby, 2 hadičky do sádry obou hnízd) a **krmítko CIBVS
   s poklopem** vpravo jsou **venku**. Krmítko je spojené krátkou hadičkou skrz obrubu.
@@ -126,7 +131,8 @@ PETG: 240/85 °C (profil Prusament PETG), na texturovaný plát nebo s lepidlem/
 - Neodymové magnety **6 × 2 mm**: Koloseum 20, Parthenón 8, Pisa 4 (půlka do rámečku, půlka do víčka)
 - Nerezová síťka **0,2 mm** (kolečka Ø 10 mm): Koloseum 8 (+ 1 kolečko Ø 26 mm do čepičky kopule), Parthenón 2, Pisa 2
 - **Jen Koloseum:**
-  - průhledná **dělitelná plastová koule Ø 150 mm** (nebo akrylová polokoule Ø 150) – půlka
+  - průhledná **dělitelná plastová koule Ø 180 mm** (nebo akrylová polokoule Ø 180) – půlka
+  - zahradní substrát bez hnojiva (nebo písek + rašelina 1:1), semínka trávy / kousky mechu
   - **plexi trubka 40/34 mm, délka 70 mm** (vodní věž)
   - **průhledná fólie PET/PETG 0,5 mm, pás 692 × 111 mm** (pás kolem celé stavby, `dxf/colosseum_band.dxf`)
   - silikonová hadička **8 × 12 mm, cca 5 cm** (krmítko → obruba)
@@ -179,8 +185,10 @@ PETG: 240/85 °C (profil Prusament PETG), na texturovaný plát nebo s lepidlem/
    na plochu).
 8. **Pás:** fólii obtoč kolem stavby do drážky obruby (konce přes sebe 12 mm, slepit páskou/
    silikonem), nasaď **věnec** (pás zapadne do jeho spodní drážky), do věnce vlep síťky.
-9. **Kopule:** do půlky koule vyvrtej Ø 30 mm, nalep kroužek čepičky, zátku se síťkou,
-   kopuli posaď do drážky věnce. Do arény a na stupně dej trochu písku a mechu, vodu
+9. **Záhonek:** nasyp do záhonku ve věnci ~10 mm vlhké hlíny (věžičky musí zůstat nad ní),
+   zasej trávu nebo polož mech. Zalévej rozprašovačem jen lehce.
+10. **Kopule:** do půlky koule vyvrtej Ø 30 mm, nalep kroužek čepičky a zátku se síťkou.
+   Kopuli **nalep** do drážky věnce akvarijním silikonem (krmí se přes čepičku a krmítko). Do arény a na stupně dej trochu písku a mechu, vodu
    (zkumavka s vatou).
 
 ### Stěhování kolonie
