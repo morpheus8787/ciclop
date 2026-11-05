@@ -129,7 +129,7 @@ PETG: 240/85 °C (profil Prusament PETG), na texturovaný plát nebo s lepidlem/
     (DXF pro laser jsou i pro ostatní: `dxf/*_plate.dxf`)
 - Šrouby **M3 × 12 zápustné** (samořezné do plastu): Koloseum 18, Parthenón 7, Pisa 4
 - Neodymové magnety **6 × 2 mm**: Koloseum 20, Parthenón 8, Pisa 4 (půlka do rámečku, půlka do víčka)
-- Nerezová síťka **0,2 mm** (kolečka Ø 10 mm): Koloseum 8 (+ 1 kolečko Ø 26 mm do čepičky kopule), Parthenón 2, Pisa 2
+- Nerezová síťka **0,2 mm** (kolečka Ø 10 mm): Koloseum 9 (+ 1 kolečko Ø 26 mm do čepičky kopule), Parthenón 2, Pisa 2
 - **Jen Koloseum:**
   - průhledná **dělitelná plastová koule Ø 180 mm** (nebo akrylová polokoule Ø 180) – půlka
   - zahradní substrát bez hnojiva (nebo písek + rašelina 1:1), semínka trávy / kousky mechu
