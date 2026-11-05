@@ -17,7 +17,8 @@ include <lib/formicarium.scad>
 PART = "assembly";
 
 // ---------- budova (střed elipsy v počátku)
-A = 112;  B = 93;  H = 118;  N_ARCH = 80;
+A = 112;  B = 93;  H = 118;  N_ARCH = 64;    // 64 širších oblouků = víc vidět dovnitř
+ARCH_W = 7.2;  COL_D = 2.6;  CORNICE = 1.6;
 TIERS = [[8, 36], [36, 64], [64, 92]];  ATTIC = [92, H];
 GAP = 90;                                      // úhel výseče
 TH_R = -90 + GAP / 2;                          // pravý řez
@@ -54,17 +55,23 @@ PINS = [[50, 32], [80, 35], [75, 74]];
 
 // ---------- galerie za oblouky
 WALL = 2.4;
-GH = CH_H + 2;
-G1 = TIERS[0][0] + 7;  G2 = TIERS[1][0] + 7;
-GZ1 = G1 + TUN_W / 2 + 0.5;  GZ2 = G2 + TUN_W / 2 + 0.5;
+GH = 17;                                       // galerie skoro přes celou výšku oblouku
+G1 = TIERS[0][0] + 5;  G2 = TIERS[1][0] + 5;  G3 = TIERS[2][0] + 5;
+GZ1 = G1 + TUN_W / 2 + 0.5;  GZ2 = G2 + TUN_W / 2 + 0.5;  GZ3 = G3 + TUN_W / 2 + 0.5;
+G4_Z = ATTIC[0] + 12.5;  G4_R = WALL + TUN_W / 2;     // chodba v atice za okénky
 // x (vzdálenost od osy) na řezu, kde střed galerie protne rovinu v hloubce d
 function g_s(d) = let(a = A - WALL - CH_D / 2, b = B - WALL - CH_D / 2,
                       p = [U[0] / a, U[1] / b], q = [N[0] * d / a, N[1] * d / b],
                       aa = p * p, bb = 2 * (p * q), cc = q * q - 1)
     (-bb + sqrt(bb * bb - 4 * aa * cc)) / (2 * aa);
 LINKS = [[[80, 5, 46], [g_s(CORE_T + 3), CORE_T + 3, GZ1]],
-         [[78, 5, 63], [g_s(CORE_T + 3), CORE_T + 3, GZ2]]];
-G_RAMPS = [[10, 22], [60, 72], [108, 120], [158, 170]];
+         [[78, 5, 63], [g_s(CORE_T + 3), CORE_T + 3, GZ2]],
+         [[82, 5, 84], [g_s(CORE_T + 3), CORE_T + 3, GZ3]]];
+G_RAMPS  = [[10, 22], [60, 72], [108, 120], [158, 170]];          // G1 -> G2
+G_RAMPS2 = [[35, 47], [85, 97], [133, 145], [183, 195]];          // G2 -> G3
+G_RAMPS3 = [[70, 64], [110, 116], [20, 14], [160, 166]];          // G3 -> chodba v atice
+G_NICHES = [ for (i = [0 : 2 : N_ARCH - 1]) let(t = (i + 0.5) * 360 / N_ARCH) t ];
+function in_body(t) = let(tt = t > 180 ? t - 360 : t) !(tt < -28 && tt > -152);   // mimo výseč a jádra
 
 // ---------- podstavec, obruba pro pás, věž, krmítko
 PL = [172, 109];  PL_T = 8;  PL_RECESS = 1.5;
@@ -87,18 +94,37 @@ module wedge(h = 400) translate([0, 0, -50]) linear_extrude(h)
 module slab_r(extra = 0) frame_r() translate([0, -extra, -50]) cube([400, CORE_T + 2 * extra, 400]);
 
 module ell_place(t, z) translate([A * cos(t), B * sin(t), z]) rotate([0, 0, atan2(sin(t) / B, cos(t) / A)]) children();
+function bay(i) = (i + 0.5) * 360 / N_ARCH;
 module arcades(depth = WALL + 1) {
-    for (i = [0 : N_ARCH - 1]) let(t = (i + 0.5) * 360 / N_ARCH) {
-        for (tr = TIERS) ell_place(t, tr[0] + 3) niche(5.8, tr[1] - tr[0] - 8, depth);
-        if (i % 2 == 0) ell_place(t, ATTIC[0] + 9) niche(3.6, 7, 1.8, arch = false);
+    for (i = [0 : N_ARCH - 1]) let(t = bay(i)) {
+        for (tr = TIERS) ell_place(t, tr[0] + 3) {
+            niche(ARCH_W, tr[1] - tr[0] - 8, depth);                              // průchozí oblouk
+            translate([0.01, 0, -0.6]) niche(ARCH_W + 1.8, tr[1] - tr[0] - 6.8, 0.6);  // archivolta
+        }
+        ell_place(t, ATTIC[0] + 9) niche(3.6, 7, depth, arch = false);           // okénka atiky
     }
-    for (zz = [TIERS[0][0], TIERS[0][1], TIERS[1][1], TIERS[2][1], H - 4])
-        difference() { e_prism(A + 1, B + 1, zz - 0.7, 1.4); e_prism(A - 0.7, B - 0.7, zz - 1, 2); }
 }
-module pilasters() for (i = [0 : N_ARCH - 1]) let(t = i * 360 / N_ARCH)
-    for (tr = TIERS) ell_place(t, tr[0] + 1) translate([-0.5, -0.9, 0]) cube([1.3, 1.8, tr[1] - tr[0] - 2]);
+// polosloupy s hlavicí a patkou, vystupující římsy se zkosením 45° (tisk bez podpěr)
+module pilasters() for (i = [0 : N_ARCH - 1]) let(t = i * 360 / N_ARCH) {
+    for (tr = TIERS) ell_place(t, tr[0]) {
+        cylinder(d = COL_D, h = tr[1] - tr[0], $fn = 10);
+        translate([-0.6, -2, 0]) cube([1.6, 4, 1.4]);
+        translate([-0.6, -2, tr[1] - tr[0] - 2.4]) cube([1.6, 4, 1.4]);
+    }
+    ell_place(t, ATTIC[0]) translate([-0.6, -1.2, 0]) cube([1.2, 2.4, ATTIC[1] - ATTIC[0] - 5]);   // pilastry atiky
+}
+module cornice_ring(z, out = CORNICE, h = 1.4) translate([0, 0, z]) {
+    linear_extrude(out, scale = [(A + out) / A, (B + out) / B]) scale([A, B]) circle(1, $fn = 180);
+    translate([0, 0, out - 0.01]) scale([A + out, B + out, 1]) cylinder(r = 1, h = h, $fn = 180);
+}
+module cornices() {
+    for (z = [TIERS[0][1], TIERS[1][1], TIERS[2][1]]) cornice_ring(z - CORNICE - 1.4);
+    cornice_ring(H - CORNICE - 1.6, h = 1.6);                                   // hlavní římsa
+    scale([A + 1.2, B + 1.2, 1]) cylinder(r = 1, h = 4, $fn = 180);           // sokl
+    translate([0, 0, 4]) linear_extrude(1.2, scale = [A / (A + 1.2), B / (B + 1.2)]) scale([A + 1.2, B + 1.2]) circle(1, $fn = 180);
+}
 
-module solid() difference() { union() { e_prism(A, B, 0, H); pilasters(); } arcades(); }
+module solid() difference() { union() { e_prism(A, B, 0, H); pilasters(); cornices(); } arcades(); }
 
 // galerie se stropem 45°, otevřená do oblouků
 module gallery_cut(z0, gh, d) {
@@ -116,10 +142,23 @@ module gallery_cut(z0, gh, d) {
     }
 }
 function gp(t, z) = [(A - WALL - CH_D / 2) * cos(t), (B - WALL - CH_D / 2) * sin(t), z];
-module gallery_ramps() for (r = G_RAMPS) {
-    capsule3(gp(r[0], GZ1), gp((r[0] + r[1]) / 2, (GZ1 + GZ2) / 2), TUN_W);
-    capsule3(gp((r[0] + r[1]) / 2, (GZ1 + GZ2) / 2), gp(r[1], GZ2), TUN_W);
+function g4(t) = [(A - G4_R) * cos(t), (B - G4_R) * sin(t), G4_Z];
+module ramp_set(rs, za, zb, pa = 0) for (r = rs) {
+    capsule3(gp(r[0], za), gp((r[0] + r[1]) / 2, (za + zb) / 2), TUN_W);
+    capsule3(gp((r[0] + r[1]) / 2, (za + zb) / 2), gp(r[1], zb), TUN_W);
 }
+module gallery_ramps() {
+    ramp_set(G_RAMPS, GZ1, GZ2);
+    ramp_set(G_RAMPS2, GZ2, GZ3);
+    for (r = G_RAMPS3) capsule3(gp(r[0], GZ3), g4(r[1]), TUN_W);
+}
+// chodba v atice: smyčka kapslí za okénky (od pravého řezu dozadu k levému)
+module attic_tunnel() for (a = [-36 : 6 : 210]) capsule3(g4(a), g4(a + 6), TUN_W);
+// výklenky / komůrky ve vnitřní stěně galerií (tmavé otvory za oblouky)
+module gallery_niches() for (k = [0 : 2]) for (j = [0 : len(G_NICHES) - 1]) let(t = G_NICHES[j] + (k % 2) * 360 / N_ARCH * 2)
+    if (in_body(t))
+        translate([(A - WALL - CH_D + 0.5) * cos(t), (B - WALL - CH_D + 0.5) * sin(t), [G1, G2, G3][k]])
+            rotate([0, 0, atan2(sin(t) / B, cos(t) / A)]) niche(j % 3 == 0 ? 9 : 6, j % 3 == 0 ? 11 : 8, 7);
 
 // spojení hnízd s galeriemi (místní) a s komůrkou královny (svět)
 module links_local() for (l = LINKS) capsule3(l[0], l[1], TUN_W);
@@ -134,6 +173,11 @@ module pit() {
                                      zt = (k == 0 ? H : PIT[k - 1][1]) - 4)
         for (a = [-20 : 15 : 190]) capsule3([(f * A + 1.5) * cos(a), (f * B + 1.5) * sin(a), z0 + (a + 20) / 210 * (zt - z0)],
             [(f * A + 1.5) * cos(a + 15), (f * B + 1.5) * sin(a + 15), z0 + (a + 35) / 210 * (zt - z0)], TUN_W);
+    // výklenky ve stěnách stupňů jámy (vidět shora skrz kopuli)
+    for (k = [0 : len(PIT) - 1]) let(f = PIT[k][0], zf = PIT[k][1])
+        for (a = [0 : 30 : 180]) let(t = a + k * 15)
+            translate([f * A * cos(t), f * B * sin(t), zf]) rotate([0, 0, atan2(sin(t) / (f * B), cos(t) / (f * A)) + 180])
+                niche(7, 9, 5);
 }
 module queen_room() {
     translate([0, QY, QUEEN_Z[0]]) cylinder(r = QUEEN_R, h = QUEEN_Z[1] - QUEEN_Z[0], $fn = 96);
@@ -164,7 +208,9 @@ module body() difference() {
     both() slab_r();
     gallery_cut(G1, GH, CH_D);
     gallery_cut(G2, GH, CH_D);
-    gallery_cut(TIERS[2][0] + 2, TIERS[2][1] - TIERS[2][0] - 4, 6);   // ozdobný ochoz
+    gallery_cut(G3, GH, CH_D);
+    attic_tunnel();
+    gallery_niches();
     gallery_ramps();
     both() frame_r() links_local();
     queen_links();
@@ -192,7 +238,7 @@ module plinth() difference() {
         translate([0, 0, PL_T]) difference() { e_prism(RIM[1], B + 9, 0, RIM_H); e_prism(RIM[0], B + 2, -1, RIM_H + 2); }
     }
     // zapuštění pro stavbu (bez výseče – tam je podlaha mezery)
-    translate([0, 0, PL_T - PL_RECESS]) difference() { e_prism(A + 0.4, B + 0.4, 0, 10); wedge(); }
+    translate([0, 0, PL_T - PL_RECESS]) difference() { e_prism(A + 1.6, B + 1.6, 0, 10); wedge(); }
     // drážka pro pás
     translate([0, 0, PL_T + RIM_H - 4]) difference() {
         e_prism(BAND_R + BAND_GROOVE / 2, B + 5.5 + BAND_GROOVE / 2, 0, 10);
