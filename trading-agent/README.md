@@ -138,7 +138,7 @@ MODE=live
 API_KEY=organizations/.../apiKeys/...
 API_SECRET=-----BEGIN EC PRIVATE KEY-----\n...\n-----END EC PRIVATE KEY-----\n
 LIVE_CONFIRM=I_UNDERSTAND_THE_RISK
-MAX_ORDER_QUOTE=50          # žádná objednávka nikdy nepřesáhne 50 EUR
+MAX_ORDER_QUOTE=100         # žádná objednávka nikdy nepřesáhne 100 EUR
 ```
 
 ### Coinbase: API klíč a bezpečnost
@@ -160,7 +160,7 @@ MAX_ORDER_QUOTE=50          # žádná objednávka nikdy nepřesáhne 50 EUR
 |---|---|---|
 | `RISK_PER_TRADE` | 1 % | ztráta při stopu je max. 1 % účtu (konfigurace víc než 5 % nepovolí) |
 | `MAX_POSITION_PCT` | 25 % | max. podíl účtu v jedné pozici |
-| `MAX_ORDER_QUOTE` | 50 EUR | absolutní strop na objednávku |
+| `MAX_ORDER_QUOTE` | 100 EUR | absolutní strop na objednávku |
 | `MAX_DAILY_LOSS_PCT` | 3 % | po denní ztrátě 3 % agent do půlnoci UTC neotevírá obchody |
 | `MAX_TRADES_PER_DAY` | 4 | ochrana proti „overtradingu“ |
 | Kill-switch | – | `touch state/STOP` → okamžitě žádné nové nákupy |

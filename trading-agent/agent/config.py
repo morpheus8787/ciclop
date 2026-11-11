@@ -56,7 +56,7 @@ class Config:
     api_secret: str = field(default="", repr=False)
     risk_per_trade: float = 0.01
     max_position_pct: float = 0.25
-    max_order_quote: float = 50.0
+    max_order_quote: float = 100.0
     max_daily_loss_pct: float = 0.03
     max_trades_per_day: int = 4
     stop_atr_mult: float = 2.0
@@ -131,7 +131,7 @@ def config_from_env(env: dict | None = None) -> Config:
         api_secret=env.get("API_SECRET", "").replace("\\n", "\n"),
         risk_per_trade=_float(env, "RISK_PER_TRADE", 0.01),
         max_position_pct=_float(env, "MAX_POSITION_PCT", 0.25),
-        max_order_quote=_float(env, "MAX_ORDER_QUOTE", 50.0),
+        max_order_quote=_float(env, "MAX_ORDER_QUOTE", 100.0),
         max_daily_loss_pct=_float(env, "MAX_DAILY_LOSS_PCT", 0.03),
         max_trades_per_day=_int(env, "MAX_TRADES_PER_DAY", 4),
         stop_atr_mult=_float(env, "STOP_ATR_MULT", 2.0),
