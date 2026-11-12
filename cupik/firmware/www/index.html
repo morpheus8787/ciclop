@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cupík</title>
+<style>
+  :root { --bg:#fff8e7; --karta:#fff; --text:#2b2b2b; --mod:#3a7bd5; --zel:#2e9e5b; --cer:#d94141; --zlu:#f2b705; --sed:#8a8a8a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--zlu); flex-wrap:wrap; }
+  header h1 { margin:0; font-size:1.6rem; flex:1; }
+  #stav { font-size:.95rem; padding:4px 10px; border-radius:20px; background:#fff; }
+  nav button { font-size:1rem; padding:6px 12px; border:0; border-radius:8px; background:#fff; }
+  nav button.aktivni { background:var(--text); color:#fff; }
+  main { padding:12px 16px; max-width:1100px; margin:auto; }
+  h2 { font-size:1.1rem; margin:14px 0 8px; }
+  .paleta { display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:10px; }
+  .dlazdice { border:0; border-radius:14px; padding:10px 6px; font-size:1rem; color:#fff; min-height:92px;
+              display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; }
+  .dlazdice .ikona { font-size:2rem; line-height:1; }
+  .pohyb { background:var(--mod); } .zvuk { background:#8e44ad; } .cas { background:var(--sed); } .smycka { background:#e67e22; }
+  #program { display:flex; flex-wrap:wrap; gap:8px; min-height:110px; padding:10px; background:var(--karta);
+             border:3px dashed #e0c98a; border-radius:14px; align-items:flex-start; }
+  #program:empty::before { content:"Klepni na dlaždici a přidej ji do programu…"; color:var(--sed); }
+  .krok { position:relative; border-radius:12px; color:#fff; padding:8px 6px; width:96px; text-align:center; }
+  .krok.vnoreny { outline:3px solid #e67e22; }
+  .krok .ikona { font-size:1.6rem; }
+  .krok .popis { font-size:.75rem; }
+  .pocet { display:flex; align-items:center; justify-content:center; gap:4px; margin-top:4px; }
+  .pocet button { width:28px; height:28px; border:0; border-radius:50%; font-size:1.1rem; }
+  .pocet span { min-width:28px; font-weight:bold; }
+  .smaz { position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; border:0; background:var(--cer); color:#fff; }
+  .ovladani { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .ovladani button { font-size:1.2rem; padding:12px 20px; border:0; border-radius:12px; color:#fff; }
+  #spust { background:var(--zel); } #zastav { background:var(--cer); } #uloz { background:var(--mod); } #vymaz { background:var(--sed); }
+  #zprava, #zpravaNastaveni { min-height:1.5em; margin-top:8px; font-weight:bold; }
+  .chyba { color:var(--cer); }
+  .kloub { background:var(--karta); border-radius:12px; padding:10px; margin-bottom:10px; }
+  .kloub label { display:block; font-weight:bold; }
+  .kloub input[type=range] { width:100%; }
+  .radek { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .radek button { padding:6px 10px; border-radius:8px; border:1px solid #ccc; background:#fff; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🤖 Cupík</h1>
+  <span id="stav">připojuji…</span>
+  <nav>
+    <button id="tabProgram" class="aktivni">Program</button>
+    <button id="tabNastaveni">Nastavení</button>
+  </nav>
+</header>
+
+<main id="stranaProgram">
+  <h2>1. Vyber pohyby</h2>
+  <div class="paleta" id="paleta"></div>
+  <h2>2. Tvůj program</h2>
+  <div id="program"></div>
+  <div class="ovladani">
+    <button id="spust">▶ Spustit</button>
+    <button id="zastav">■ Stop</button>
+    <button id="uloz">💾 Uložit do robota</button>
+    <button id="vymaz">🗑 Smazat vše</button>
+  </div>
+  <div id="zprava"></div>
+  <p>📏 Vzdálenost překážky: <b id="vzdalenost">–</b></p>
+</main>
+
+<main id="stranaNastaveni" hidden>
+  <h2>Kalibrace (pro učitele)</h2>
+  <p>Posuvníkem nastav každý kloub tak, aby noha stála rovně. Tlačítko „+30°“ ověří směr pohybu:
+    kyčel má natočit špičku <b>doleva</b>, kotník naklopit chodidlo <b>doprava</b> (při pohledu zepředu).
+    Když se kloub pohne opačně, klepni na „Otočit směr“.</p>
+  <div id="klouby"><p>Nastavení se načte po připojení k robotovi.</p></div>
+  <div class="kloub radek">
+    <label><input type="checkbox" id="obratChuzi"> Robot chodí obráceně (prohodit dopředu/dozadu)</label>
+  </div>
+  <div class="kloub radek">
+    <label for="rychlost">Rychlost:</label>
+    <select id="rychlost"><option value="0.6">pomalu</option><option value="1">normálně</option><option value="1.5">rychle</option></select>
+  </div>
+  <div class="ovladani"><button id="ulozNastaveni" style="background:var(--mod)">💾 Uložit nastavení</button></div>
+  <div id="zpravaNastaveni"></div>
+</main>
+
+<script>
+"use strict";
+const PRIKAZY = {
+  vpred:   { ikona:"⬆️", text:"Krok dopředu", trida:"pohyb" },
+  vzad:    { ikona:"⬇️", text:"Krok dozadu", trida:"pohyb" },
+  vlevo:   { ikona:"↪️", text:"Otoč doleva", trida:"pohyb" },
+  vpravo:  { ikona:"↩️", text:"Otoč doprava", trida:"pohyb" },
+  kroc:    { ikona:"👣", text:"Cupitej", trida:"pohyb" },
+  houpej:  { ikona:"〰️", text:"Houpej se", trida:"pohyb" },
+  pruz:    { ikona:"🦘", text:"Pružení", trida:"pohyb" },
+  tanec:   { ikona:"💃", text:"Tanec", trida:"pohyb" },
+  pipni:   { ikona:"🔔", text:"Pípni", trida:"zvuk" },
+  melodie: { ikona:"🎵", text:"Melodie", trida:"zvuk" },
+  cekej:   { ikona:"⏳", text:"Čekej (s)", trida:"cas" },
+  zacatek: { ikona:"🔁", text:"Opakuj…", trida:"smycka" },
+  konec:   { ikona:"⏹️", text:"…konec opakování", trida:"smycka" },
+};
+const KLOUBY = ["Kyčel levá", "Kyčel pravá", "Kotník levý", "Kotník pravý"];
+const MAX_N = 20;
+const $ = (id) => document.getElementById(id);
+
+let kroky = [];          // plochý seznam {p, n} včetně „zacatek“/„konec“
+let nastaveni = null;
+
+// ---------- komunikace s robotem ----------
+async function api(cesta, data) {
+  const volby = data === undefined ? {} :
+    { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(data) };
+  try {
+    const odp = await fetch(cesta, volby);
+    const json = await odp.json();
+    nastavStav(true);
+    return json;
+  } catch (e) {
+    nastavStav(false);
+    return { ok:false, chyba:"Robot není připojený." };
+  }
+}
+
+function nastavStav(pripojen) {
+  $("stav").textContent = pripojen ? "🟢 připojeno" : "🔴 nepřipojeno";
+}
+
+function zprava(text, chyba, id = "zprava") {
+  const el = $(id);
+  el.textContent = text;
+  el.className = chyba ? "chyba" : "";
+}
+
+// ---------- skládání programu ----------
+function vytvorTlacitko(text, akce, trida) {
+  const b = document.createElement("button");
+  b.textContent = text;
+  if (trida) b.className = trida;
+  b.addEventListener("click", akce);
+  return b;
+}
+
+function vykresliPaletu() {
+  for (const [klic, info] of Object.entries(PRIKAZY)) {
+    const b = vytvorTlacitko("", () => pridej(klic), "dlazdice " + info.trida);
+    const ikona = document.createElement("span");
+    ikona.className = "ikona";
+    ikona.textContent = info.ikona;
+    b.append(ikona, document.createTextNode(info.text));
+    $("paleta").append(b);
+  }
+}
+
+function pridej(klic) {
+  kroky = [...kroky, { p:klic, n: klic === "zacatek" ? 2 : 1 }];
+  vykresliProgram();
+}
+
+function zmenPocet(i, o) {
+  kroky = kroky.map((k, j) => j === i ? { ...k, n: Math.min(MAX_N, Math.max(1, k.n + o)) } : k);
+  vykresliProgram();
+}
+
+function smaz(i) {
+  kroky = kroky.filter((_, j) => j !== i);
+  vykresliProgram();
+}
+
+function vytvorKartu(k, i, vnorena) {
+  const info = PRIKAZY[k.p];
+  const karta = document.createElement("div");
+  karta.className = "krok " + info.trida + (vnorena ? " vnoreny" : "");
+  const ikona = document.createElement("div");
+  ikona.className = "ikona";
+  ikona.textContent = info.ikona;
+  const popis = document.createElement("div");
+  popis.className = "popis";
+  popis.textContent = info.text;
+  karta.append(ikona, popis);
+  if (k.p !== "konec") {
+    const pocet = document.createElement("div");
+    pocet.className = "pocet";
+    const cislo = document.createElement("span");
+    cislo.textContent = "×" + k.n;
+    pocet.append(vytvorTlacitko("−", () => zmenPocet(i, -1)), cislo, vytvorTlacitko("+", () => zmenPocet(i, 1)));
+    karta.append(pocet);
+  }
+  karta.append(vytvorTlacitko("✕", () => smaz(i), "smaz"));
+  return karta;
+}
+
+function vykresliProgram() {
+  const el = $("program");
+  el.replaceChildren();
+  let hloubka = 0;
+  kroky.forEach((k, i) => {
+    if (k.p === "konec") hloubka = Math.max(0, hloubka - 1);
+    el.append(vytvorKartu(k, i, hloubka > 0));
+    if (k.p === "zacatek") hloubka++;
+  });
+  try { localStorage.setItem("cupik-program", JSON.stringify(kroky)); } catch (e) { /* nevadí */ }
+}
+
+// plochý seznam se „zacatek/konec“ -> vnořený program pro robota
+function sestavProgram(seznam) {
+  const koren = [];
+  const zasobnik = [koren];
+  for (const k of seznam) {
+    const aktualni = zasobnik[zasobnik.length - 1];
+    if (k.p === "zacatek") {
+      const smycka = { p:"opakuj", n:k.n, telo:[] };
+      aktualni.push(smycka);
+      zasobnik.push(smycka.telo);
+    } else if (k.p === "konec") {
+      if (zasobnik.length === 1) throw new Error("„Konec opakování“ nemá svůj začátek.");
+      zasobnik.pop();
+    } else {
+      aktualni.push({ p:k.p, n:k.n });
+    }
+  }
+  if (zasobnik.length > 1) throw new Error("Chybí „…konec opakování“.");
+  return koren;
+}
+
+// vnořený program z robota -> plochý seznam pro zobrazení
+function rozlozProgram(prg) {
+  return prg.flatMap((k) => k.p === "opakuj"
+    ? [{ p:"zacatek", n:k.n }, ...rozlozProgram(k.telo), { p:"konec", n:1 }]
+    : [{ p:k.p, n:k.n }]);
+}
+
+async function odesli(cesta, hotovo) {
+  let prg;
+  try { prg = sestavProgram(kroky); } catch (e) { zprava(e.message, true); return; }
+  if (prg.length === 0) { zprava("Program je prázdný.", true); return; }
+  const odp = await api(cesta, { program: prg });
+  zprava(odp.ok ? hotovo : "⚠️ " + odp.chyba, !odp.ok);
+}
+
+// ---------- nastavení ----------
+function vytvorKloub(nazev, i) {
+  const box = document.createElement("div");
+  box.className = "kloub";
+  const label = document.createElement("label");
+  const hodnota = document.createElement("span");
+  hodnota.textContent = nastaveni.trim[i] + "°";
+  label.append(nazev + ": trim ", hodnota);
+  const posuvnik = document.createElement("input");
+  posuvnik.type = "range"; posuvnik.min = -30; posuvnik.max = 30; posuvnik.value = nastaveni.trim[i];
+  posuvnik.addEventListener("input", () => { hodnota.textContent = posuvnik.value + "°"; });
+  posuvnik.addEventListener("change", async () => {
+    nastaveni = { ...nastaveni, trim: nastaveni.trim.map((t, j) => j === i ? Number(posuvnik.value) : t) };
+    await api("/api/nastaveni", nastaveni);
+    await api("/api/kloub", { kloub:i, uhel:0 });
+  });
+  const smer = document.createElement("span");
+  smer.textContent = nastaveni.smer[i] === 1 ? "směr: normální" : "směr: otočený";
+  const radek = document.createElement("div");
+  radek.className = "radek";
+  radek.append(
+    vytvorTlacitko("+30°", () => api("/api/kloub", { kloub:i, uhel:30 })),
+    vytvorTlacitko("0°", () => api("/api/kloub", { kloub:i, uhel:0 })),
+    vytvorTlacitko("Otočit směr", async () => {
+      nastaveni = { ...nastaveni, smer: nastaveni.smer.map((s, j) => j === i ? -s : s) };
+      await api("/api/nastaveni", nastaveni);
+      vykresliKlouby();
+    }),
+    smer);
+  box.append(label, posuvnik, radek);
+  return box;
+}
+
+function vykresliKlouby() {
+  $("klouby").replaceChildren(...KLOUBY.map(vytvorKloub));
+  $("obratChuzi").checked = nastaveni.smer_chuze === -1;
+  $("rychlost").value = String(nastaveni.rychlost);
+}
+
+async function ulozNastaveni() {
+  if (!nastaveni) { zprava("Robot není připojený.", true, "zpravaNastaveni"); return; }
+  nastaveni = { ...nastaveni, smer_chuze: $("obratChuzi").checked ? -1 : 1, rychlost: Number($("rychlost").value) };
+  const odp = await api("/api/nastaveni", nastaveni);
+  zprava(odp.ok ? "✅ Uloženo." : "⚠️ " + odp.chyba, !odp.ok, "zpravaNastaveni");
+}
+
+function prepniStranu(nastav) {
+  $("stranaProgram").hidden = nastav;
+  $("stranaNastaveni").hidden = !nastav;
+  $("tabProgram").classList.toggle("aktivni", !nastav);
+  $("tabNastaveni").classList.toggle("aktivni", nastav);
+}
+
+// ---------- start ----------
+async function start() {
+  vykresliPaletu();
+  try { kroky = JSON.parse(localStorage.getItem("cupik-program")) || []; } catch (e) { kroky = []; }
+  kroky = kroky.filter((k) => k && PRIKAZY[k.p] && Number.isInteger(k.n));
+  const stav = await api("/api/stav");
+  if (stav.ok) {
+    nastaveni = stav.data.nastaveni;
+    if (kroky.length === 0) kroky = rozlozProgram(stav.data.program);
+    vykresliKlouby();
+  }
+  vykresliProgram();
+  $("spust").addEventListener("click", () => odesli("/api/spust", "▶ Robot jde na to!"));
+  $("uloz").addEventListener("click", () => odesli("/api/uloz", "💾 Uloženo. Tlačítko BOOT na robotovi ho spustí."));
+  $("zastav").addEventListener("click", async () => { await api("/api/zastav", {}); zprava("■ Zastaveno."); });
+  $("vymaz").addEventListener("click", () => { kroky = []; vykresliProgram(); zprava(""); });
+  $("tabProgram").addEventListener("click", () => prepniStranu(false));
+  $("tabNastaveni").addEventListener("click", () => prepniStranu(true));
+  $("ulozNastaveni").addEventListener("click", ulozNastaveni);
+  setInterval(async () => {
+    if (!$("stranaProgram").hidden) {
+      const odp = await api("/api/vzdalenost");
+      $("vzdalenost").textContent = odp.ok && odp.data.cm >= 0 ? odp.data.cm + " cm" : "–";
+    }
+  }, 1500);
+}
+start();
+</script>
+</body>
+</html>
