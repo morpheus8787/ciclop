@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Dolina</title>
+<meta name="description" content="Dolina – budovatelská hospodářská strategie pro iPad a prohlížeč.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dolina">
+<meta name="theme-color" content="#1b2430">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root {
+  --bg: #1b2430; --panel: rgba(28, 36, 48, 0.94); --text: #f2efe6; --muted: #a9b2bf;
+  --accent: #ffd54a; --btn: #34425a; --btn-on: #4f6a96; --danger: #a8423a; --primary: #3c7a46;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+  font: 15px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; overscroll-behavior: none; }
+#game { position: fixed; inset: 0; touch-action: none; display: block; }
+button { font: inherit; color: var(--text); background: var(--btn); border: 0; border-radius: 10px;
+  min-height: 44px; padding: 8px 12px; cursor: pointer; touch-action: manipulation; }
+button:active { filter: brightness(1.25); }
+button.on { background: var(--btn-on); box-shadow: inset 0 0 0 2px var(--accent); }
+button.danger { background: var(--danger); }
+button.primary { background: var(--primary); }
+#top { position: fixed; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 6px) calc(env(safe-area-inset-right) + 8px) 6px calc(env(safe-area-inset-left) + 8px);
+  background: linear-gradient(var(--panel), rgba(28,36,48,0.75)); pointer-events: none; }
+#top > * { pointer-events: auto; }
+#title { font-weight: 800; letter-spacing: 0.5px; color: var(--accent); font-size: 18px; margin-right: 4px; }
+#res { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.chip { display: inline-block; background: rgba(255,255,255,0.09); border-radius: 8px; padding: 3px 8px; white-space: nowrap; margin: 1px 0; }
+#tools { display: flex; gap: 6px; }
+#panel { position: fixed; left: 50%; bottom: 0; transform: translate(-50%, 110%); transition: transform 0.22s ease;
+  width: min(720px, 100%); max-height: 58vh; overflow: auto; background: var(--panel); border-radius: 16px 16px 0 0;
+  padding: 14px 16px calc(env(safe-area-inset-bottom) + 14px); box-shadow: 0 -6px 24px rgba(0,0,0,0.35); }
+#panel.show { transform: translate(-50%, 0); }
+#panel .close, #modal .close { position: absolute; right: 10px; top: 10px; min-height: 40px; width: 44px; }
+h2, h3 { margin: 0 44px 8px 0; }
+h3 small { color: var(--muted); font-weight: 400; }
+p { margin: 6px 0; }
+.muted { color: var(--muted); font-size: 13px; }
+.warn { color: #ff8a80; font-weight: 600; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+.col button { text-align: left; }
+.tabs { display: flex; gap: 6px; margin: 8px 0; overflow-x: auto; }
+.tabs button { flex: 1; min-width: 80px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.bbtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; min-height: 86px; }
+.bbtn .ic { font-size: 26px; }
+.bbtn b { font-size: 13px; text-align: center; }
+.bbtn small { color: var(--muted); }
+.cost { margin: 0 3px; }
+#banner { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translateX(-50%);
+  background: var(--panel); border-radius: 12px; padding: 8px 10px 8px 16px; display: none; align-items: center; gap: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35); max-width: calc(100% - 24px); }
+#banner.show { display: flex; }
+#modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; padding: 16px; }
+#modal.show { display: flex; }
+#modalCard { position: relative; background: var(--panel); border-radius: 16px; padding: 18px; width: min(620px, 100%);
+  max-height: 86vh; overflow: auto; -webkit-user-select: text; user-select: text; }
+.stock { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.sitem { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 10px; }
+.sitem span:nth-child(2) { flex: 1; }
+.sitem .ic { font-size: 20px; }
+.goals li { margin: 6px 0; }
+.goals li.done { color: var(--muted); }
+.goals li.cur { color: var(--accent); font-weight: 700; }
+.win { font-size: 18px; color: var(--accent); }
+ul { padding-left: 20px; }
+li { margin: 4px 0; }
+#toasts { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; width: min(520px, calc(100% - 24px)); }
+.toast { background: rgba(20,26,36,0.92); border: 1px solid rgba(255,213,74,0.35); padding: 8px 14px; border-radius: 10px;
+  transition: opacity 0.5s; text-align: center; }
+.toast.out { opacity: 0; }
+@media (max-width: 600px) {
+  #title { display: none; }
+  #res .chip:nth-child(n+4) { display: none; }
+  #tools button { padding: 8px 9px; }
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="top">
+  <span id="title">Dolina</span>
+  <div id="res"></div>
+  <div id="tools">
+    <button id="speedBtn" data-a="speed" title="Rychlost">⏩ 1×</button>
+    <button id="spotsBtn" data-a="spots" title="Stavební místa">🏗</button>
+    <button data-a="stock" title="Zásoby">📦</button>
+    <button id="goalBtn" data-a="goals" title="Cíle">🎯</button>
+    <button data-a="menu" title="Menu">☰</button>
+  </div>
+</div>
+
+<div id="banner"><span>🛣️ Klepni na místo, kam má cesta vést</span><button data-a="endRoad">Hotovo</button></div>
+<div id="toasts"></div>
+
+<div id="panel"><button class="close" data-a="closePanel" aria-label="Zavřít">✕</button><div id="panelBody"></div></div>
+
+<div id="modal"><div id="modalCard"><button class="close" data-a="closeModal" aria-label="Zavřít">✕</button><div id="modalBody"></div></div></div>
+
+<script src="js/data.js"></script>
+<script src="js/map.js"></script>
+<script src="js/world.js"></script>
+<script src="js/econ.js"></script>
+<script src="js/units.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
